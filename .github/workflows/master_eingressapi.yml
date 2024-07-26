@@ -25,7 +25,17 @@ jobs:
         run: |
           npm install
           npm run build --if-present
-          
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      id-token: write #This is required for requesting the JWT
+
+    steps:
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -40,4 +50,3 @@ jobs:
           app-name: 'eingressapi'
           slot-name: 'Production'
           package: .
-          
