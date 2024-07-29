@@ -10,6 +10,7 @@ import { EmployeeListModule } from './employee-list/employee-list.module';
 import { AccessLogModule } from './access-log/access-log.module';
 import { LoginTotalModule } from './login-total/login-total.module';
 
+
 @Module({
   // imports: [TypeOrmModule.forRoot(config)],
   // controllers: [AppController],
@@ -32,6 +33,7 @@ import { LoginTotalModule } from './login-total/login-total.module';
     AuthModule,
     EmployeeListModule,
     AccessLogModule,
+    LoginTotalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

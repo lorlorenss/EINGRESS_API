@@ -8,6 +8,7 @@ import { _dbaccesslog } from '../../access-log/models/access-log.entity';  // Up
 import { AccessLogService } from 'src/access-log/services/access-log.service';
 import { register } from 'module';
 
+
 @Injectable()
 export class EmployeeService {
     constructor(
@@ -18,21 +19,6 @@ export class EmployeeService {
         private readonly accessLogRepository: Repository<_dbaccesslog>,
     ) {}
 
-//     create(employee: Employee, file: Express.Multer.File): Observable<Employee> {
-//       // Check if the file is provided
-//       if (!file) {
-//           throw new BadRequestException('No file uploaded');
-//       }
-
-//       // Save the file to disk
-//       const profileImage = file.filename;
-
-//       // Set the profile image in the employee data
-//       employee.profileImage = profileImage;
-
-//       // Save the employee data
-//       return from(this.userRepository.save(employee));
-//   }
 
 create(employee: Employee): Observable<Employee> {
   
@@ -45,7 +31,7 @@ create(employee: Employee): Observable<Employee> {
    
 }
 
-    findOneID(id: number): Observable<Employee> {
+    findOne(id: number): Observable<Employee> {
         return from(this.userRepository.findOne({ where: { id } }));
     }
 
@@ -53,29 +39,17 @@ create(employee: Employee): Observable<Employee> {
         return from(this.userRepository.find({relations:['accessLogs']}));
     }
 
-// NEW CODE 6-26-2024 
-    // findByRfidTag(rfidTag: string): Observable<_dbemployee> {
-    // console.log('RFID Tag input:', rfidTag);
-    // return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
-    //   catchError(err => {
-    //     console.error('Error finding employee by RFID tag:', err);
-    //     return throwError(new BadRequestException('Error finding employee by RFID tag'));
-    //   })
-    //  );
-    // }
     findByRfidTag(rfidTag: string): Observable<_dbemployee> {
-      console.log('RFID Tag input:', rfidTag);
-      return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
-        catchError(err => {
-          console.error('Error finding employee by RFID tag:', err);
-          return throwError(new NotFoundException('Employee not found for RFID tag'));
-        })
-      );
-    }
-   
-
-
-    logEmployeeAccess(fingerprint: string, rfid: string): Observable<any> {
+        console.log('RFID Tag input:', rfidTag);
+        return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
+          catchError(err => {
+            console.error('Error finding employee by RFID tag:', err);
+            return throwError(new NotFoundException('Employee not found for RFID tag'));
+          })
+        );
+      }
+    
+      logEmployeeAccess(fingerprint: string, rfid: string): Observable<any> {
         return from(this.userRepository.findOne({ where: { fingerprint } })).pipe(
           switchMap((employee: _dbemployee) => {
             if (!employee) {
@@ -119,7 +93,7 @@ create(employee: Employee): Observable<Employee> {
         );
       }
   
-     
+      
       getOnlyDate(datetime: string): string {
         const date = new Date(datetime);
         const year = date.getFullYear();
@@ -151,7 +125,7 @@ create(employee: Employee): Observable<Employee> {
   
     updateOne(id: number, employee: Employee): Observable<Employee> {
         return from(this.userRepository.update(id, employee)).pipe(
-            switchMap(() => this.findOneID(id))
+            switchMap(() => this.findOne(id))
         );
     }
 
@@ -161,3 +135,5 @@ create(employee: Employee): Observable<Employee> {
 
 }
 
+  
+  
