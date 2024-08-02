@@ -27,29 +27,21 @@ export class EmployeeController {
 
 
 
-@Post()
-@UseInterceptors(FileInterceptor('file', storage))
-create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
-  // If no file is provided, handle the case accordingly
-  if (!file) {
-    // Set a specific file path when no file is uploaded
-    const specificFilePath = 'max-smith.png';
-    const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)))
-    console.log('typeof ', updatedEmployeeData)   
-    return this.userService.create({...updatedEmployeeData, profileImage: specificFilePath });
-
-  }
-
-  // If a file is provided, update the employee data with the file path
-  // You can also handle any additional modifications to the employee data here
-  const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)))
-  console.log('typeof ', updatedEmployeeData)   
-        // Assign the file path to the employee object
-        // employee.profileImage = file.path;
-    
-        // Call the service method to create the employee
-    return this.userService.create({...updatedEmployeeData, profileImage: file.filename});
-}
+    @Post()
+    @UseInterceptors(FileInterceptor('file'))
+    create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
+      if (!file) {
+        const specificFilePath = 'max-smith.png';
+        const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
+        console.log('typeof ', updatedEmployeeData);
+  
+        return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath });
+      }
+  
+      const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
+      console.log('typeof ', updatedEmployeeData);
+      return this.userService.create({ ...updatedEmployeeData, profileImage: file.filename });
+    }
 
 
 
