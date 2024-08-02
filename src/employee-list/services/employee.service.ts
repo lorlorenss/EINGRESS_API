@@ -20,16 +20,23 @@ export class EmployeeService {
     ) {}
 
 
-create(employee: Employee): Observable<Employee> {
+    create(employee: Employee): Observable<Employee> {
+      console.log('EMPLOYEE FINAL VALUE ', employee);
   
-  console.log('EMPLOYEE FINAL VALUE ', employee)
-    // Save the employee data
-    if (!employee.lastlogdate) {
-      employee.lastlogdate = '';
+      if (!employee.lastlogdate) {
+        employee.lastlogdate = '';
+      }
+  
+      if (!employee.rfidtag) {
+        employee.rfidtag = null;
+      }
+  
+      if (!employee.fingerprint) {
+        employee.fingerprint = null;
+      }
+  
+      return from(this.userRepository.save(employee));
     }
-    return from(this.userRepository.save(employee));
-   
-}
 
     findOne(id: number): Observable<Employee> {
         return from(this.userRepository.findOne({ where: { id } }));
