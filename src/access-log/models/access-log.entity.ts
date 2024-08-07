@@ -22,5 +22,8 @@ export class _dbaccesslog {
   roleAtAccess: string; // Role of the employee at the time of access
 
   @Column({ nullable: true})
-  fingerprint: string;
+  fingerprint1: string;
+
+  @Column({ nullable: true})
+  fingerprint2: string;
 }

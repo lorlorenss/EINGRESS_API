@@ -7,10 +7,7 @@ export interface Employee {
   regdate?: Date;
   lastlogdate?: string;
   profileImage?: string;
-  fingerprint?: string; // Include fingerprint property
+  fingerprint1?: string;
+  fingerprint2?: string;
   rfidtag?: string;
 }
-
-  
-
-  

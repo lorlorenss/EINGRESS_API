@@ -35,9 +35,10 @@ export class _dbemployee {
 
 
   // This should be unique kay mao ang naa sa database
-  @Column({ nullable: true, unique: true })
-  fingerprint: string;
-
+  @Column({ nullable: true})
+  fingerprint1: string;
+  @Column({ nullable: true})
+  fingerprint2: string;
   // @Column({ nullable: true })
   // profileImagePath?: string;
 

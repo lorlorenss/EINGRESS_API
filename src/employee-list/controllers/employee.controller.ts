@@ -78,7 +78,7 @@ findOne(@Param('id', ParseIntPipe) id: number): Observable<Employee> {
                     throw new NotFoundException('Employee not found for RFID tag');
                 }
                 // Check if the employee has stored fingerprint on the database
-                if (!employee.fingerprint) {
+                if (!employee.fingerprint1 && !employee.fingerprint2) {
                     throw new BadRequestException('Employee has no fingerprint');
                 }
                 return employee;

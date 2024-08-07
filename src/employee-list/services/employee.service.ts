@@ -31,8 +31,12 @@ export class EmployeeService {
         employee.rfidtag = null;
       }
   
-      if (!employee.fingerprint) {
-        employee.fingerprint = null;
+      if (!employee.fingerprint1) {
+        employee.fingerprint1 = null;
+      }
+      
+      if (!employee.fingerprint2) {
+        employee.fingerprint2 = null;
       }
   
       return from(this.userRepository.save(employee));
@@ -57,48 +61,54 @@ export class EmployeeService {
       }
     
       logEmployeeAccess(fingerprint: string, rfid: string): Observable<any> {
-        return from(this.userRepository.findOne({ where: { fingerprint } })).pipe(
-          switchMap((employee: _dbemployee) => {
-            if (!employee) {
-              throw new BadRequestException('Employee not found');
-            }
+        return from(this.userRepository.findOne({ where: { rfidtag: rfid } })).pipe(
+            switchMap((employee: _dbemployee) => {
+                if (!employee) {
+                    throw new BadRequestException('Employee not found');
+                }
+                
+                // Check if neither fingerprint matches
+                if (employee.fingerprint1 !== fingerprint && employee.fingerprint2 !== fingerprint) {
+                    throw new BadRequestException('Fingerprint does not match');
+                }
     
-            // Check if the employee's RFID matches the stored RFID
-            if (employee.rfidtag !== rfid) {
-              throw new BadRequestException('RFID does not match');
-            }
+                // Check if the employee's RFID matches the stored RFID
+                if (employee.rfidtag !== rfid) {
+                    throw new BadRequestException('RFID does not match');
+                }
     
-            const currentDate = new Date();
-            const options: Intl.DateTimeFormatOptions = {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-              timeZone: 'Asia/Manila',
-            };
-            const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
-            employee.lastlogdate = dateAndTimeInPhilippineTime;
+                const currentDate = new Date();
+                const options: Intl.DateTimeFormatOptions = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                    timeZone: 'Asia/Manila',
+                };
+                const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
+                employee.lastlogdate = dateAndTimeInPhilippineTime;
     
-            return from(this.userRepository.save(employee)).pipe(
-              switchMap(() => this.accessLogService.logAccess(fingerprint)),
-              map(() => ({
-                fullname: employee.fullname,
-                role: employee.role,
-                profileImage: employee.profileImage,
-              })),
-            );
-          }),
-          catchError((error) => {
-            if (error instanceof BadRequestException) {
-              console.error('Error logging employee access:', error.message);
-            }
-            return throwError(error);
-          }),
+                return from(this.userRepository.save(employee)).pipe(
+                    switchMap(() => this.accessLogService.logAccess(fingerprint)),
+                    map(() => ({
+                        fullname: employee.fullname,
+                        role: employee.role,
+                        profileImage: employee.profileImage,
+                    })),
+                );
+            }),
+            catchError((error) => {
+                if (error instanceof BadRequestException) {
+                    console.error('Error logging employee access:', error.message);
+                }
+                return throwError(error);
+            }),
         );
-      }
+    }
+    
   
       
       getOnlyDate(datetime: string): string {

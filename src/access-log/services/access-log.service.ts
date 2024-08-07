@@ -46,7 +46,7 @@ export class AccessLogService {
   }
 
   logAccess(fingerprint: string): Observable<void> {
-    return from(this.employeeRepository.findOne({ where: { fingerprint: fingerprint } })).pipe(
+    return from(this.employeeRepository.findOne({ where: [{ fingerprint1: fingerprint },{ fingerprint2: fingerprint }] })).pipe(
       switchMap((employee: _dbemployee) => {
         if (!employee) {
           throw new BadRequestException('Employee not found');
@@ -59,7 +59,8 @@ export class AccessLogService {
           accessType: 'In', // or 'Out', depending on the logic
           roleAtAccess: employee.role,
           employee: employee, // Include the employee entity
-          fingerprint:employee.fingerprint
+          fingerprint1:employee.fingerprint1,
+          fingerprint2:employee.fingerprint2,
          
           // Any additional properties you need to include in the access log entry
         };
