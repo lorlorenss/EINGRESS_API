@@ -12,6 +12,6 @@ export class _dberrorLog {
   @Column()
   message: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  timestamp: Date;
+  @Column()
+  timestamp: string;
 }

@@ -1,9 +1,9 @@
-// src/error-log/services/error-log.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { _dberrorLog } from '../models/error-log.entity';
-import moment from 'moment-timezone';
+import * as moment from 'moment-timezone';
+import { from, Observable } from 'rxjs';
 
 @Injectable()
 export class ErrorLogService {
@@ -16,14 +16,28 @@ export class ErrorLogService {
 
   async createErrorLog(errorLogData: Partial<_dberrorLog>): Promise<_dberrorLog> {
     try {
-      // Set the timestamp to the current time in Philippine Time
-      const timestamp = moment().tz('Asia/Manila').toDate();
-      const errorLog = this.errorLogRepository.create({ ...errorLogData, timestamp });
+      const currentDate = new Date();
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Manila',
+    };
+      const formattedDate = currentDate.toLocaleString('en-PH', options);
+
+      const errorLog = this.errorLogRepository.create({
+        ...errorLogData,
+        timestamp: formattedDate,
+      });
       const savedErrorLog = await this.errorLogRepository.save(errorLog);
 
       // Log the successful creation of the error log
       this.logger.log(`Successfully created error log with ID: ${savedErrorLog.id}`);
-
+      
       return savedErrorLog;
     } catch (error) {
       // Log the error if something goes wrong
@@ -45,9 +59,16 @@ export class ErrorLogService {
       throw error;
     }
   }
-//delete all error-logs 1month from now. 
-  async deleteOldLogs(): Promise<void> {
-    const oneMonthAgo = moment().tz('Asia/Manila').subtract(1, 'months').toDate();
-    await this.errorLogRepository.delete({ timestamp: LessThan(oneMonthAgo) });
+  
+  async deleteAllOlderThanOneMonth(): Promise<void> {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const formattedDate = oneMonthAgo.toISOString();
+
+    await this.errorLogRepository.createQueryBuilder()
+      .delete()
+      .from(_dberrorLog)
+      .where("timestamp < :formattedDate", { formattedDate })
+      .execute();
   }
 }

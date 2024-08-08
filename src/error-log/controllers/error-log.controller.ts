@@ -33,11 +33,11 @@ export class ErrorLogController {
     }
   }
 
-  @Delete('old')
-  async deleteOldLogs(): Promise<{ message: string }> {
+  @Delete('older-than-one-month')
+  async deleteAllOlderThanOneMonth(): Promise<{ message: string }> {
     try {
-      await this.errorLogService.deleteOldLogs();
-      return { message: 'Old logs successfully deleted.' };
+      await this.errorLogService.deleteAllOlderThanOneMonth();
+      return { message: 'Old error logs successfully deleted.' };
     } catch (error) {
       throw error;
     }

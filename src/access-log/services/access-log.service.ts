@@ -62,7 +62,7 @@ export class AccessLogService {
             const accessLogEntry: _dbaccesslog = {
                 id: 0, // Provide a default value for id if it's not auto-generated
                 rfidtag: employee.rfidtag,
-                accessDateTime: new Date(),
+                accessDateTime: employee.lastlogdate,
                 accessType: 'In', // or 'Out', depending on the logic
                 roleAtAccess: employee.role,
                 employee: employee,

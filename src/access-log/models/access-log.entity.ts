@@ -12,8 +12,8 @@ export class _dbaccesslog {
   @Column()
   rfidtag: string;
 
-  @Column()
-  accessDateTime: Date;
+  @Column() 
+  accessDateTime: string;
 
   @Column()
   accessType: string; // 'In' or 'Out'
