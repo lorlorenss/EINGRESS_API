@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { _dberrorLog } from '../models/error-log.entity';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class ErrorLogService {
@@ -15,12 +16,14 @@ export class ErrorLogService {
 
   async createErrorLog(errorLogData: Partial<_dberrorLog>): Promise<_dberrorLog> {
     try {
-      const errorLog = this.errorLogRepository.create(errorLogData);
+      // Set the timestamp to the current time in Philippine Time
+      const timestamp = moment().tz('Asia/Manila').toDate();
+      const errorLog = this.errorLogRepository.create({ ...errorLogData, timestamp });
       const savedErrorLog = await this.errorLogRepository.save(errorLog);
 
       // Log the successful creation of the error log
       this.logger.log(`Successfully created error log with ID: ${savedErrorLog.id}`);
-      
+
       return savedErrorLog;
     } catch (error) {
       // Log the error if something goes wrong
@@ -42,20 +45,9 @@ export class ErrorLogService {
       throw error;
     }
   }
-
+//delete all error-logs 1month from now. 
   async deleteOldLogs(): Promise<void> {
-    try {
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-      await this.errorLogRepository.delete({
-        timestamp: LessThan(oneMonthAgo),
-      });
-
-      this.logger.log('Successfully deleted old error logs');
-    } catch (error) {
-      this.logger.error('Failed to delete old error logs', error.stack);
-      throw error; // Rethrow the error after logging it
-    }
+    const oneMonthAgo = moment().tz('Asia/Manila').subtract(1, 'months').toDate();
+    await this.errorLogRepository.delete({ timestamp: LessThan(oneMonthAgo) });
   }
 }

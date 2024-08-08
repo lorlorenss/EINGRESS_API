@@ -33,10 +33,14 @@ export class ErrorLogController {
     }
   }
 
-  @Delete('cleanup')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteOldLogs(): Promise<void> {
-    await this.errorLogService.deleteOldLogs();
+  @Delete('old')
+  async deleteOldLogs(): Promise<{ message: string }> {
+    try {
+      await this.errorLogService.deleteOldLogs();
+      return { message: 'Old logs successfully deleted.' };
+    } catch (error) {
+      throw error;
+    }
   }
   
 }
