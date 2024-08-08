@@ -45,40 +45,49 @@ export class AccessLogService {
     });
   }
 
-  logAccess(fingerprint: string): Observable<void> {
-    return from(this.employeeRepository.findOne({ where: [{ fingerprint1: fingerprint },{ fingerprint2: fingerprint }] })).pipe(
-      switchMap((employee: _dbemployee) => {
-        if (!employee) {
-          throw new BadRequestException('Employee not found');
-        }
+  logAccess(rfid: string, fingerprint: string): Observable<void> {
+    return from(this.employeeRepository.findOne({ where: { rfidtag: rfid } })).pipe(
+        switchMap((employee: _dbemployee) => {
+            if (!employee) {
+                throw new BadRequestException('Employee not found');
+            }
 
-        const accessLogEntry: _dbaccesslog = {
-          id: 0, // Provide a default value for id if it's not auto-generated
-          rfidtag: employee.rfidtag, // Add rfidtag from employee
-          accessDateTime: new Date(),
-          accessType: 'In', // or 'Out', depending on the logic
-          roleAtAccess: employee.role,
-          employee: employee, // Include the employee entity
-          fingerprint1:employee.fingerprint1,
-          fingerprint2:employee.fingerprint2,
-         
-          // Any additional properties you need to include in the access log entry
-        };
+            if (employee.fingerprint1 !== fingerprint && employee.fingerprint2 !== fingerprint) {
+                throw new BadRequestException('Fingerprint does not match');
+            }
 
-        return from(this.accessLogRepository.save(accessLogEntry)).pipe(
-          catchError((error) => {
-            return throwError('Error saving access log');
-          }),
-          switchMap(() => {
-            return from(Promise.resolve()); // Return an empty observable
-          })
-        );
-      }),
-      catchError((error) => {
-        return throwError('Error finding employee');
-      })
+          
+
+            const accessLogEntry: _dbaccesslog = {
+                id: 0, // Provide a default value for id if it's not auto-generated
+                rfidtag: employee.rfidtag,
+                accessDateTime: new Date(),
+                accessType: 'In', // or 'Out', depending on the logic
+                roleAtAccess: employee.role,
+                employee: employee,
+                fingerprint1: employee.fingerprint1,
+                fingerprint2: employee.fingerprint2,
+            };
+
+            console.log('Access log entry created:', accessLogEntry);
+
+            return from(this.accessLogRepository.save(accessLogEntry)).pipe(
+                catchError((error) => {
+                    console.error('Error saving access log:', error);
+                    return throwError('Error saving access log');
+                }),
+                switchMap(() => {
+                    console.log('Access log saved successfully');
+                    return from(Promise.resolve()); // Return an empty observable
+                })
+            );
+        }),
+        catchError((error) => {
+            console.error('Error finding employee:', error);
+            return throwError('Error finding employee');
+        })
     );
-  }
+}
 
   findByEmployeeId(employeeId: number): Promise<_dbaccesslog[]> {
     return this.accessLogRepository.find({ where: { employee: { id: employeeId } } });

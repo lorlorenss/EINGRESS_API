@@ -119,14 +119,16 @@ findOne(@Param('id', ParseIntPipe) id: number): Observable<Employee> {
   
 
     @Post('log-access')
-    logAccess(@Body() body: any): Promise<void> {
-      const { fingerprint, rfid } = body;
-      if (!fingerprint || !rfid) {
+logAccess(@Body() body: any): Promise<void> {
+    const { fingerprint, rfid } = body;
+    if (!fingerprint || !rfid) {
         throw new BadRequestException('Fingerprint and RFID are required');
-      }
-  
-      return this.userService.logEmployeeAccess(fingerprint, rfid).toPromise();
     }
+
+    console.log('Received log access request:', { fingerprint, rfid });
+
+    return this.userService.logEmployeeAccess(fingerprint, rfid).toPromise();
+}
     
  
     @Post('upload')

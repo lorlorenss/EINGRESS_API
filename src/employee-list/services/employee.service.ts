@@ -66,16 +66,14 @@ export class EmployeeService {
                 if (!employee) {
                     throw new BadRequestException('Employee not found');
                 }
-                
+    
+                console.log('Employee found:', employee);
+    
                 // Check if neither fingerprint matches
                 if (employee.fingerprint1 !== fingerprint && employee.fingerprint2 !== fingerprint) {
                     throw new BadRequestException('Fingerprint does not match');
                 }
-    
-                // Check if the employee's RFID matches the stored RFID
-                if (employee.rfidtag !== rfid) {
-                    throw new BadRequestException('RFID does not match');
-                }
+  
     
                 const currentDate = new Date();
                 const options: Intl.DateTimeFormatOptions = {
@@ -91,8 +89,9 @@ export class EmployeeService {
                 const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
                 employee.lastlogdate = dateAndTimeInPhilippineTime;
     
+    
                 return from(this.userRepository.save(employee)).pipe(
-                    switchMap(() => this.accessLogService.logAccess(fingerprint)),
+                    switchMap(() => this.accessLogService.logAccess(rfid, fingerprint)),
                     map(() => ({
                         fullname: employee.fullname,
                         role: employee.role,
