@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { _dbaccesslog } from './../../access-log/models/access-log.entity';
 import { Observable, catchError, from, map, switchMap, throwError } from 'rxjs';
 import { _dbemployee } from 'src/employee-list/models/employee.entity';
+import { ErrorLogService } from 'src/error-log/services/error-log.service';
 
 @Injectable()
 export class AccessLogService {

@@ -84,7 +84,7 @@ findOne(@Param('id', ParseIntPipe) id: number): Observable<Employee> {
                 return employee;
             }),
             catchError(err => {
-                console.error('Error verifying RFID:', err);
+                //console.error('Error verifying RFID:', err);
                 throw err; // Re-throw the caught error to be handled by the caller
             })
         );
