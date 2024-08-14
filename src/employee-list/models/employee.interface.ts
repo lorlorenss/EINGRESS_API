@@ -10,4 +10,5 @@ export interface Employee {
   fingerprint1?: string;
   fingerprint2?: string;
   rfidtag?: string;
+  branch: string;
 }

@@ -41,6 +41,8 @@ export class _dbemployee {
   fingerprint2: string;
   // @Column({ nullable: true })
   // profileImagePath?: string;
+  @Column({ nullable: true})
+  branch: string;
 
   @OneToMany(() => _dbaccesslog, (accessLog) => accessLog.employee)
   accessLogs: _dbaccesslog[]; // One-to-many relationship with AccessLog
