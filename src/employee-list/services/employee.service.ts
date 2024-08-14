@@ -129,8 +129,39 @@ export class EmployeeService {
             }),
         );
     }
-    
-    private checkDuplicateFingerprint(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
+    private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
+      return from(
+        this.userRepository.findOne({
+          where: [
+            {
+              branch: employee.branch,
+              fingerprint1: employee.fingerprint1,
+            },
+            {
+              branch: employee.branch,
+              fingerprint1: employee.fingerprint2,
+            },
+            {
+              branch: employee.branch,
+              fingerprint2: employee.fingerprint1,
+            },
+            {
+              branch: employee.branch,
+              fingerprint2: employee.fingerprint2,
+            },
+          ],
+        })
+      ).pipe(
+        map(existingEmployee => {
+          if (existingEmployee) {
+            throw new BadRequestException(
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
+            );
+          }
+        })
+      );
+    }
+    private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
       return from(
         this.userRepository.findOne({
           where: [
@@ -199,7 +230,7 @@ export class EmployeeService {
 
   
   updateOne(id: number, employee: Employee): Observable<Employee> {
-    return this.checkDuplicateFingerprint(employee, id).pipe(
+    return this.checkDuplicateFingerprintIgnoreID(employee, id).pipe(
       switchMap(() => {
         return from(this.userRepository.update(id, employee)).pipe(
           switchMap(() => this.findOne(id)),
