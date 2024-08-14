@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { totalLogs } from '../models/logs-total.interface';
 import { Observable, from } from 'rxjs';
-import { startOfMonth, endOfMonth } from 'date-fns';
 import { Between } from 'typeorm';
 @Injectable()
 export class LoginTotalService {
