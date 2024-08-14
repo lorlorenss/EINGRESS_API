@@ -130,25 +130,29 @@ export class EmployeeService {
         );
     }
     
-    private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
+    private checkDuplicateFingerprint(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
       return from(
         this.userRepository.findOne({
           where: [
             {
               branch: employee.branch,
               fingerprint1: employee.fingerprint1,
+              id: Not(idToExclude),
             },
             {
               branch: employee.branch,
               fingerprint1: employee.fingerprint2,
+              id: Not(idToExclude),
             },
             {
               branch: employee.branch,
               fingerprint2: employee.fingerprint1,
+              id: Not(idToExclude),
             },
             {
               branch: employee.branch,
               fingerprint2: employee.fingerprint2,
+              id: Not(idToExclude),
             },
           ],
         })
@@ -156,12 +160,13 @@ export class EmployeeService {
         map(existingEmployee => {
           if (existingEmployee) {
             throw new BadRequestException(
-              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
             );
           }
         })
       );
     }
+    
     
       
       getOnlyDate(datetime: string): string {
@@ -194,7 +199,7 @@ export class EmployeeService {
 
   
   updateOne(id: number, employee: Employee): Observable<Employee> {
-    return this.checkDuplicateFingerprint(employee).pipe(
+    return this.checkDuplicateFingerprint(employee, id).pipe(
       switchMap(() => {
         return from(this.userRepository.update(id, employee)).pipe(
           switchMap(() => this.findOne(id)),
@@ -206,6 +211,7 @@ export class EmployeeService {
       })
     );
   }
+  
   
 
     countEmployees(): Observable<number> {
