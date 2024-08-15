@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
-import { Observable, from, map, switchMap,mergeMap, throwError, catchError } from 'rxjs';
+import { Observable, from, map, switchMap,mergeMap, throwError, catchError, of } from 'rxjs';
 import { Employee } from '../models/employee.interface';
 import { _dbemployee } from '../models/employee.entity';
 import { _dbaccesslog } from '../../access-log/models/access-log.entity';  // Update this import path
@@ -40,11 +40,11 @@ export class EmployeeService {
           }
     
           if (!employee.fingerprint1) {
-            employee.fingerprint1 = null;
+            employee.fingerprint1 = '';
           }
     
           if (!employee.fingerprint2) {
-            employee.fingerprint2 = null;
+            employee.fingerprint2 = '';
           }
     
           // Save the employee to the repository
@@ -130,30 +130,35 @@ export class EmployeeService {
         );
     }
     private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
+      const conditions: any[] = [];
+    
+      if (employee.fingerprint1) {
+        conditions.push(
+          { branch: employee.branch, fingerprint1: employee.fingerprint1 },
+          { branch: employee.branch, fingerprint2: employee.fingerprint1 }
+        );
+      }
+    
+      if (employee.fingerprint2) {
+        conditions.push(
+          { branch: employee.branch, fingerprint1: employee.fingerprint2 },
+          { branch: employee.branch, fingerprint2: employee.fingerprint2 }
+        );
+      }
+    
+      // If no conditions to check, return empty observable
+      if (conditions.length === 0) {
+        return of<void>();
+      }
+    
       return from(
         this.userRepository.findOne({
-          where: [
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint1,
-            },
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint2,
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint1,
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint2,
-            },
-          ],
+          where: conditions,
         })
       ).pipe(
         map(existingEmployee => {
           if (existingEmployee) {
+            console.log('Duplicate fingerprint found:', existingEmployee);
             throw new BadRequestException(
               `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
             );
@@ -161,6 +166,8 @@ export class EmployeeService {
         })
       );
     }
+    
+    
     private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
       return from(
         this.userRepository.findOne({
