@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, NotFoundException, Query, BadRequestException } from '@nestjs/common';
 import { AccessLogService } from '../services/access-log.service';
 import { _dbaccesslog } from './../../access-log/models/access-log.entity'; // Adjust the import path if necessary
+import { Observable } from 'rxjs';
 
 @Controller('access-log')
 export class AccessLogController {
@@ -73,4 +74,8 @@ export class AccessLogController {
     
   //   return this.accessLogService.logAccess(rfidTag).toPromise();
   // }
+  @Post()
+  logAccess(@Body('rfid') rfid: string, @Body('fingerprint') fingerprint: string): Observable<void> {
+    return this.accessLogService.logAccess(rfid, fingerprint);
+  }
 }

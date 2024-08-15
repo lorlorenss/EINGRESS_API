@@ -14,9 +14,6 @@
 # npm install --save @nestjs/typeorm typeorm pg -->
 # npm install --save-dev @types/multer
 # npm i uuid --save
-
-# npm install @nestjs/platform-express
-
 ---------------------------------------------------
 CREAATE AN .env file
 

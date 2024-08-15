@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
-import { Observable, from, map, switchMap,mergeMap, throwError, catchError } from 'rxjs';
+import { Observable, from, map, switchMap,mergeMap, throwError, catchError, of } from 'rxjs';
 import { Employee } from '../models/employee.interface';
 import { _dbemployee } from '../models/employee.entity';
 import { _dbaccesslog } from '../../access-log/models/access-log.entity';  // Update this import path
 import { AccessLogService } from 'src/access-log/services/access-log.service';
 import { register } from 'module';
+
 
 @Injectable()
 export class EmployeeService {
@@ -18,34 +19,52 @@ export class EmployeeService {
         private readonly accessLogRepository: Repository<_dbaccesslog>,
     ) {}
 
-//     create(employee: Employee, file: Express.Multer.File): Observable<Employee> {
-//       // Check if the file is provided
-//       if (!file) {
-//           throw new BadRequestException('No file uploaded');
-//       }
 
-//       // Save the file to disk
-//       const profileImage = file.filename;
-
-//       // Set the profile image in the employee data
-//       employee.profileImage = profileImage;
-
-//       // Save the employee data
-//       return from(this.userRepository.save(employee));
-//   }
-
-create(employee: Employee): Observable<Employee> {
-  
-  console.log('EMPLOYEE FINAL VALUE ', employee)
-    // Save the employee data
-    if (!employee.lastlogdate) {
-      employee.lastlogdate = '';
+    create(employee: Employee): Observable<Employee> {
+      return this.checkDuplicateFingerprint(employee).pipe(
+        switchMap(existingEmployee => {
+          if (existingEmployee) {
+            // Throw a BadRequestException with the specific error message
+            throw new BadRequestException(
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
+            );
+          }
+    
+          // Set default values if they are not provided
+          if (!employee.lastlogdate) {
+            employee.lastlogdate = '';
+          }
+    
+          if (!employee.rfidtag) {
+            employee.rfidtag = null;
+          }
+    
+          if (!employee.fingerprint1) {
+            employee.fingerprint1 = '';
+          }
+    
+          if (!employee.fingerprint2) {
+            employee.fingerprint2 = '';
+          }
+    
+          // Save the employee to the repository
+          return from(this.userRepository.save(employee));
+        }),
+        catchError(error => {
+          console.error('Error creating employee:', error);
+          // Check if the error is an instance of BadRequestException
+          if (error instanceof BadRequestException) {
+            // Re-throw the error to be caught by the caller
+            return throwError(error);
+          } else {
+            // Return a generic error message for other types of errors
+            return throwError(new BadRequestException('An error occurred while creating the employee.'));
+          }
+        })
+      );
     }
-    return from(this.userRepository.save(employee));
-   
-}
 
-    findOneID(id: number): Observable<Employee> {
+    findOne(id: number): Observable<Employee> {
         return from(this.userRepository.findOne({ where: { id } }));
     }
 
@@ -53,73 +72,141 @@ create(employee: Employee): Observable<Employee> {
         return from(this.userRepository.find({relations:['accessLogs']}));
     }
 
-// NEW CODE 6-26-2024 
-    // findByRfidTag(rfidTag: string): Observable<_dbemployee> {
-    // console.log('RFID Tag input:', rfidTag);
-    // return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
-    //   catchError(err => {
-    //     console.error('Error finding employee by RFID tag:', err);
-    //     return throwError(new BadRequestException('Error finding employee by RFID tag'));
-    //   })
-    //  );
-    // }
     findByRfidTag(rfidTag: string): Observable<_dbemployee> {
-      console.log('RFID Tag input:', rfidTag);
-      return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
-        catchError(err => {
-          console.error('Error finding employee by RFID tag:', err);
-          return throwError(new NotFoundException('Employee not found for RFID tag'));
+        console.log('RFID Tag input:', rfidTag);
+        return from(this.userRepository.findOne({ where: { rfidtag: rfidTag } })).pipe(
+          catchError(err => {
+            console.error('Error finding employee by RFID tag:', err);
+            return throwError(new NotFoundException('Employee not found for RFID tag'));
+          })
+        );
+      }
+    
+      logEmployeeAccess(fingerprint: string, rfid: string): Observable<any> {
+        return from(this.userRepository.findOne({ where: { rfidtag: rfid } })).pipe(
+            switchMap((employee: _dbemployee) => {
+                if (!employee) {
+                    throw new BadRequestException('Employee not found');
+                }
+    
+                console.log('Employee found:', employee);
+    
+                // Check if neither fingerprint matches
+                if (employee.fingerprint1 !== fingerprint && employee.fingerprint2 !== fingerprint) {
+                    throw new BadRequestException('Fingerprint does not match');
+                }
+  
+    
+                const currentDate = new Date();
+                const options: Intl.DateTimeFormatOptions = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                    timeZone: 'Asia/Manila',
+                };
+                const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
+                employee.lastlogdate = dateAndTimeInPhilippineTime;
+    
+    
+                return from(this.userRepository.save(employee)).pipe(
+                    switchMap(() => this.accessLogService.logAccess(rfid, fingerprint)),
+                    map(() => ({
+                        fullname: employee.fullname,
+                        role: employee.role,
+                        profileImage: employee.profileImage,
+                    })),
+                );
+            }),
+            catchError((error) => {
+                if (error instanceof BadRequestException) {
+                    console.error('Error logging employee access:', error.message);
+                }
+                return throwError(error);
+            }),
+        );
+    }
+    private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
+      const conditions: any[] = [];
+    
+      if (employee.fingerprint1) {
+        conditions.push(
+          { branch: employee.branch, fingerprint1: employee.fingerprint1 },
+          { branch: employee.branch, fingerprint2: employee.fingerprint1 }
+        );
+      }
+    
+      if (employee.fingerprint2) {
+        conditions.push(
+          { branch: employee.branch, fingerprint1: employee.fingerprint2 },
+          { branch: employee.branch, fingerprint2: employee.fingerprint2 }
+        );
+      }
+    
+      // If no conditions to check, return empty observable
+      if (conditions.length === 0) {
+        return of<void>();
+      }
+    
+      return from(
+        this.userRepository.findOne({
+          where: conditions,
+        })
+      ).pipe(
+        map(existingEmployee => {
+          if (existingEmployee) {
+            console.log('Duplicate fingerprint found:', existingEmployee);
+            throw new BadRequestException(
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
+            );
+          }
         })
       );
     }
-   
-
-
-    logEmployeeAccess(fingerprint: string, rfid: string): Observable<any> {
-        return from(this.userRepository.findOne({ where: { fingerprint } })).pipe(
-          switchMap((employee: _dbemployee) => {
-            if (!employee) {
-              throw new BadRequestException('Employee not found');
-            }
     
-            // Check if the employee's RFID matches the stored RFID
-            if (employee.rfidtag !== rfid) {
-              throw new BadRequestException('RFID does not match');
-            }
     
-            const currentDate = new Date();
-            const options: Intl.DateTimeFormatOptions = {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-              timeZone: 'Asia/Manila',
-            };
-            const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
-            employee.lastlogdate = dateAndTimeInPhilippineTime;
-    
-            return from(this.userRepository.save(employee)).pipe(
-              switchMap(() => this.accessLogService.logAccess(fingerprint)),
-              map(() => ({
-                fullname: employee.fullname,
-                role: employee.role,
-                profileImage: employee.profileImage,
-              })),
+    private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
+      return from(
+        this.userRepository.findOne({
+          where: [
+            {
+              branch: employee.branch,
+              fingerprint1: employee.fingerprint1,
+              id: Not(idToExclude),
+            },
+            {
+              branch: employee.branch,
+              fingerprint1: employee.fingerprint2,
+              id: Not(idToExclude),
+            },
+            {
+              branch: employee.branch,
+              fingerprint2: employee.fingerprint1,
+              id: Not(idToExclude),
+            },
+            {
+              branch: employee.branch,
+              fingerprint2: employee.fingerprint2,
+              id: Not(idToExclude),
+            },
+          ],
+        })
+      ).pipe(
+        map(existingEmployee => {
+          if (existingEmployee) {
+            throw new BadRequestException(
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
             );
-          }),
-          catchError((error) => {
-            if (error instanceof BadRequestException) {
-              console.error('Error logging employee access:', error.message);
-            }
-            return throwError(error);
-          }),
-        );
-      }
-  
-     
+          }
+        })
+      );
+    }
+    
+    
+      
       getOnlyDate(datetime: string): string {
         const date = new Date(datetime);
         const year = date.getFullYear();
@@ -149,11 +236,21 @@ create(employee: Employee): Observable<Employee> {
   }
 
   
-    updateOne(id: number, employee: Employee): Observable<Employee> {
+  updateOne(id: number, employee: Employee): Observable<Employee> {
+    return this.checkDuplicateFingerprintIgnoreID(employee, id).pipe(
+      switchMap(() => {
         return from(this.userRepository.update(id, employee)).pipe(
-            switchMap(() => this.findOneID(id))
+          switchMap(() => this.findOne(id)),
+          catchError(error => {
+            console.error('Error updating employee:', error);
+            return throwError(new BadRequestException('An error occurred while updating the employee.'));
+          })
         );
-    }
+      })
+    );
+  }
+  
+  
 
     countEmployees(): Observable<number> {
       return from(this.userRepository.count());
@@ -161,3 +258,5 @@ create(employee: Employee): Observable<Employee> {
 
 }
 
+  
+  

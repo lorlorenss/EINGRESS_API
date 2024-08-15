@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post , Delete, Put, NotFoundException, BadRequestException, UseInterceptors, UploadedFile, Res, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post , Delete, Put, NotFoundException, BadRequestException, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
 import { EmployeeService } from '../services/employee.service';
 import { Employee } from '../models/employee.interface';
 import { Observable, catchError, map, mergeMap, of, switchMap } from 'rxjs';
@@ -7,6 +7,7 @@ import { diskStorage } from 'multer';
 import {v4 as uuid4} from 'uuid';
 import * as path from 'path';
 import { join } from 'path';
+import { ParseIntPipe } from '@nestjs/common';
 
 export const storage = {
   storage: diskStorage({
@@ -24,38 +25,31 @@ export const storage = {
 export class EmployeeController {
     constructor(private userService: EmployeeService) {}
 
+
+
+    @Post()
+    @UseInterceptors(FileInterceptor('file'))
+    create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
+      if (!file) {
+        const specificFilePath = 'max-smith.png';
+        const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
+        console.log('typeof ', updatedEmployeeData);
   
+        return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath });
+      }
+  
+      const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
+      console.log('typeof ', updatedEmployeeData);
+      return this.userService.create({ ...updatedEmployeeData, profileImage: file.filename });
+    }
 
-@Post()
-@UseInterceptors(FileInterceptor('file', storage))
-create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
-  // If no file is provided, handle the case accordingly
-  if (!file) {
-    // Set a specific file path when no file is uploaded
-    const specificFilePath = 'max-smith.png';
-    const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)))
-    console.log('typeof ', updatedEmployeeData)   
-    return this.userService.create({...updatedEmployeeData, profileImage: specificFilePath });
 
-  }
 
-  // If a file is provided, update the employee data with the file path
-  // You can also handle any additional modifications to the employee data here
-  const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)))
-  console.log('typeof ', updatedEmployeeData)   
-        // Assign the file path to the employee object
-        // employee.profileImage = file.path;
-    
-        // Call the service method to create the employee
-    return this.userService.create({...updatedEmployeeData, profileImage: file.filename});
+@Get(':id') // Route for findOne
+findOne(@Param('id', ParseIntPipe) id: number): Observable<Employee> {
+  return this.userService.findOne(id);
 }
 
-
-
-    @Get(':id') // Route for findOne
-    findOne(@Param() params): Observable<Employee> {
-      return this.userService.findOneID(params.id);
-    }
 
     @Get() // Custom route name for findAll
     findAll(): Observable<Employee[]> {
@@ -73,7 +67,7 @@ create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observabl
     }
 
 
-//THIS CODE IS FOR FETCHING THE RFIDTAG AND VERIFYING
+    //THIS CODE IS FOR FETCHING THE RFIDTAG AND VERIFYING
     @Get('rfid/:rfidTag')
     verifyRfid(@Param('rfidTag') rfidTag: string): Observable<Employee> {
         console.log('RFID Tag input:', rfidTag); // Log the inputted RFID tag
@@ -84,24 +78,22 @@ create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observabl
                     throw new NotFoundException('Employee not found for RFID tag');
                 }
                 // Check if the employee has stored fingerprint on the database
-                if (!employee.fingerprint) {
+                if (!employee.fingerprint1 && !employee.fingerprint2) {
                     throw new BadRequestException('Employee has no fingerprint');
                 }
                 return employee;
             }),
             catchError(err => {
-                console.error('Error verifying RFID:', err);
+                //console.error('Error verifying RFID:', err);
                 throw err; // Re-throw the caught error to be handled by the caller
             })
         );
     }
 
-
-
     @Put(':id')
     @UseInterceptors(FileInterceptor('file', storage))
     updateOne(@Param('id') id: string, @Body() payload: { employee: Employee }, @UploadedFile() file): Observable<any> {
-      return this.userService.findOneID(Number(id)).pipe(
+      return this.userService.findOne(Number(id)).pipe(
         catchError(() => {
           throw new NotFoundException(`Employee with ID ${id} not found`);
         }),
@@ -124,29 +116,20 @@ create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observabl
       );
     }
     
-    
+  
 
-  // @Post('log-access')
-  // logAccess(@Body('rfidTag') rfidTag: string): Promise<void> {
-  //   if (!rfidTag) {
-  //     throw new BadRequestException('RFID tag is required');
-  //   }
-    
-  //     // console.log(rfidTag, "This is wrong");
-  //   return this.userService.logEmployeeAccess(rfidTag).toPromise();
-  // }
-
-  //THIS IS TO POST THE LOG ACCESS
-  @Post('log-access')
-  logAccess(@Body() body: any): Promise<void> {
+    @Post('log-access')
+logAccess(@Body() body: any): Promise<void> {
     const { fingerprint, rfid } = body;
     if (!fingerprint || !rfid) {
-      throw new BadRequestException('Fingerprint and RFID are required');
+        throw new BadRequestException('Fingerprint and RFID are required');
     }
 
+    console.log('Received log access request:', { fingerprint, rfid });
+
     return this.userService.logEmployeeAccess(fingerprint, rfid).toPromise();
-  }
-  
+}
+    
  
     @Post('upload')
     @UseInterceptors(FileInterceptor('file',storage))

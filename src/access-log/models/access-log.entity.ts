@@ -9,11 +9,11 @@ export class _dbaccesslog {
   @ManyToOne(() => _dbemployee, employee => employee.accessLogs)
   employee: _dbemployee;
 
-  @Column ()
-  rfidtag:string;
-
   @Column()
-  accessDateTime: Date;
+  rfidtag: string;
+
+  @Column() 
+  accessDateTime: string;
 
   @Column()
   accessType: string; // 'In' or 'Out'
@@ -21,7 +21,9 @@ export class _dbaccesslog {
   @Column()
   roleAtAccess: string; // Role of the employee at the time of access
 
-  //NULLABLE LANG SA NI KAY WALAY SULOD ANG ACCESSLOG
-  @Column ({nullable:true})
-  fingerprint:string;
+  @Column({ nullable: true})
+  fingerprint1: string;
+
+  @Column({ nullable: true})
+  fingerprint2: string;
 }
