@@ -129,74 +129,37 @@ export class EmployeeService {
             }),
         );
     }
-    private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
-      const conditions: any[] = [];
+    private checkDuplicateFingerprint(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
+      // Create a query builder instance
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
     
+      // Add conditions to the query builder based on the fingerprints
       if (employee.fingerprint1) {
-        conditions.push(
-          { branch: employee.branch, fingerprint1: employee.fingerprint1 },
-          { branch: employee.branch, fingerprint2: employee.fingerprint1 }
-        );
+        queryBuilder
+          .orWhere('(user.branch = :branch AND (user.fingerprint1 = :fingerprint1 OR user.fingerprint2 = :fingerprint1))', {
+            branch: employee.branch,
+            fingerprint1: employee.fingerprint1,
+            idToExclude
+          });
       }
     
       if (employee.fingerprint2) {
-        conditions.push(
-          { branch: employee.branch, fingerprint1: employee.fingerprint2 },
-          { branch: employee.branch, fingerprint2: employee.fingerprint2 }
-        );
+        queryBuilder
+          .orWhere('(user.branch = :branch AND (user.fingerprint1 = :fingerprint2 OR user.fingerprint2 = :fingerprint2))', {
+            branch: employee.branch,
+            fingerprint2: employee.fingerprint2,
+            idToExclude
+          });
       }
     
-      // If no conditions to check, return empty observable
-      if (conditions.length === 0) {
-        return of<void>();
+      // Exclude the current employee from the results
+      if (idToExclude) {
+        queryBuilder.andWhere('user.id != :idToExclude', { idToExclude });
       }
     
-      return from(
-        this.userRepository.findOne({
-          where: conditions,
-        })
-      ).pipe(
+      return from(queryBuilder.getOne()).pipe(
         map(existingEmployee => {
-          if (existingEmployee) {
-            console.log('Duplicate fingerprint found:', existingEmployee);
-            throw new BadRequestException(
-              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
-            );
-          }
-        })
-      );
-    }
-    
-    
-    private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
-      return from(
-        this.userRepository.findOne({
-          where: [
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint1,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint2,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint1,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint2,
-              id: Not(idToExclude),
-            },
-          ],
-        })
-      ).pipe(
-        map(existingEmployee => {
-          if (existingEmployee) {
+          if (existingEmployee && (existingEmployee.fingerprint1 || existingEmployee.fingerprint2)) {
             throw new BadRequestException(
               `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
             );
@@ -205,6 +168,45 @@ export class EmployeeService {
       );
     }
     
+    
+    private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
+      // Create a query builder instance
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
+    
+      // Add conditions to the query builder based on the fingerprints
+      if (employee.fingerprint1) {
+        queryBuilder
+          .orWhere('user.branch = :branch AND (user.fingerprint1 = :fingerprint1 OR user.fingerprint2 = :fingerprint1)', {
+            branch: employee.branch,
+            fingerprint1: employee.fingerprint1,
+            idToExclude
+          });
+      }
+    
+      if (employee.fingerprint2) {
+        queryBuilder
+          .orWhere('user.branch = :branch AND (user.fingerprint1 = :fingerprint2 OR user.fingerprint2 = :fingerprint2)', {
+            branch: employee.branch,
+            fingerprint2: employee.fingerprint2,
+            idToExclude
+          });
+      }
+    
+      // Exclude the current employee from the results
+      if (idToExclude) {
+        queryBuilder.andWhere('user.id != :idToExclude', { idToExclude });
+      }
+    
+      return from(queryBuilder.getOne()).pipe(
+        map(existingEmployee => {
+          if (existingEmployee && (existingEmployee.fingerprint1 || existingEmployee.fingerprint2)) {
+            throw new BadRequestException(
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
+            );
+          }
+        })
+      );
+    }
     
       
       getOnlyDate(datetime: string): string {
