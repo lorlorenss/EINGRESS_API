@@ -21,30 +21,42 @@ export class EmployeeService {
 
 
     create(employee: Employee): Observable<Employee> {
+      // Set default values if they are not provided
+      if (!employee.lastlogdate) {
+        employee.lastlogdate = '';
+      }
+    
+      if (!employee.rfidtag) {
+        employee.rfidtag = null;
+      }
+    
+      if (!employee.fingerprint1) {
+        employee.fingerprint1 = '';
+      }
+    
+      if (!employee.fingerprint2) {
+        employee.fingerprint2 = '';
+      }
+    
+      // Check if fingerprint check can be skipped
+      const shouldCheckFingerprints = employee.fingerprint1 || employee.fingerprint2;
+    
+      if (!shouldCheckFingerprints) {
+        // Directly save the employee if no fingerprints are provided
+        return from(this.userRepository.save(employee)).pipe(
+          catchError(error => {
+            console.error('Error creating employee:', error);
+            return throwError(new BadRequestException('An error occurred while creating the employee.'));
+          })
+        );
+      }
+    
       return this.checkDuplicateFingerprint(employee).pipe(
         switchMap(existingEmployee => {
           if (existingEmployee) {
-            // Throw a BadRequestException with the specific error message
             throw new BadRequestException(
               `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
             );
-          }
-    
-          // Set default values if they are not provided
-          if (!employee.lastlogdate) {
-            employee.lastlogdate = '';
-          }
-    
-          if (!employee.rfidtag) {
-            employee.rfidtag = null;
-          }
-    
-          if (!employee.fingerprint1) {
-            employee.fingerprint1 = '';
-          }
-    
-          if (!employee.fingerprint2) {
-            employee.fingerprint2 = '';
           }
     
           // Save the employee to the repository
@@ -52,17 +64,15 @@ export class EmployeeService {
         }),
         catchError(error => {
           console.error('Error creating employee:', error);
-          // Check if the error is an instance of BadRequestException
           if (error instanceof BadRequestException) {
-            // Re-throw the error to be caught by the caller
             return throwError(error);
           } else {
-            // Return a generic error message for other types of errors
             return throwError(new BadRequestException('An error occurred while creating the employee.'));
           }
         })
       );
     }
+    
 
     findOne(id: number): Observable<Employee> {
         return from(this.userRepository.findOne({ where: { id } }));
