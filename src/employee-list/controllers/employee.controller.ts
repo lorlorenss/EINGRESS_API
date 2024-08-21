@@ -78,11 +78,10 @@ export class EmployeeController {
           throw new NotFoundException('Employee not found for RFID tag');
         }
 
-        if ((!employee.fingerprint1 && !employee.fingerprint2) && employee.role !== 'Intern') {
+        if (!employee.fingerprint1 && !employee.fingerprint2) {
           console.log("User branch:", employee.branch);
           throw new BadRequestException('Employee has no fingerprint');
-      }
-
+        }
         return employee;
       }),
       catchError(err => {
