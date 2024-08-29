@@ -60,13 +60,18 @@ export class AdminLoginService {
     return from(this.userRepository.delete(id));
   }
   
-  updateOne(id: number, user: User): Observable<any> {
-    delete user.password;
+  //TRY AND ERROR
+  updateOne(id: number, user: Partial<User>): Observable<User> {
+    console.log(`Updating user with ID: ${id}`, user); // Debug log
     return from(this.userRepository.update(id, user)).pipe(
       switchMap(() => this.findOne(id)),
+      catchError(err => {
+        console.error('Error updating user:', err); // Error log
+        return throwError(err);
+      })
     );
-  }
-
+  }  
+  
   login(user: User): Observable<string | any> {
     return this.validateUser(user.username, user.password).pipe(
       switchMap((user: User) => {
