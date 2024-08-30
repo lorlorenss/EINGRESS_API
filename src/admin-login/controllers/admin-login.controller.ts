@@ -46,10 +46,7 @@ login(@Body() user: User): Observable<Object> {
 
   //TRY AND ERROR
   @Put(':id')
-updateOne(@Param('id') id: number, @Body() user: Partial<User>): Observable<any> {
-  return this.userService.updateOne(id, user);
-}
-
-
-  
+  updateOne(@Param('id') id: number, @Body() user: Partial<User>): Observable<User> {
+    return this.userService.updateOne(id, user);
+  }
 }
