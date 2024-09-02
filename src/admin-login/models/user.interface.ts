@@ -5,4 +5,9 @@ export interface User {
     username?: string;  
     password?:string;
     role?: UserRole;
+    email: string;
+    verified: boolean;
+    reset_token: string;
+    token_expiry: Date;
+    profileImage?: string;
   }
