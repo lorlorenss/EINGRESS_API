@@ -32,5 +32,13 @@ export class _dbadmin {
   token_expiry: Date;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  otp_code: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  otp_expiry: Date;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   profileImage?: string;
+
+
 }
