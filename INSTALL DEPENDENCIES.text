@@ -14,9 +14,12 @@
 # npm install --save @nestjs/typeorm typeorm pg -->
 # npm install --save-dev @types/multer
 # npm i uuid --save
+# npm i nodemailer
+# npm i --save-dev @types/nodemailer
 ---------------------------------------------------
 CREAATE AN .env file
 
+# FOR DB ENVIRONMENT
 POSTGRES_URL="postgres://default:XAs0rGbvcI5O@ep-holy-mud-a1zszn94-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
 POSTGRES_PRISMA_URL="postgres://default:XAs0rGbvcI5O@ep-holy-mud-a1zszn94-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require&pgbouncer=true&connect_timeout=15"
 POSTGRES_URL_NO_SSL="postgres://default:XAs0rGbvcI5O@ep-holy-mud-a1zszn94-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb"
@@ -26,3 +29,12 @@ POSTGRES_HOST="ep-holy-mud-a1zszn94-pooler.ap-southeast-1.aws.neon.tech"
 POSTGRES_PASSWORD="XAs0rGbvcI5O"
 POSTGRES_DATABASE="verceldb"
 JWT_SECRET=xczmeqwjhsad132
+
+# FOR MAILER CREDENTIALS
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USER=6c860993564381
+MAIL_PASSWORD=c5c4b5b45ec04a
+
+DEFAULT_MAIL_FROM=info@example.com
+APP_NAME=EINGRESS
