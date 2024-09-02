@@ -38,34 +38,6 @@ export class MailerController {
   }
 
 
-  @Post('/reset-password')
-  async sendResetPassword(@Body() body: Record<string, string>) {
-    console.log("Sending reset password");
-
-    // Define file paths relative to the current file's location
-    const htmlFilePath = path.join('src', 'mailer', 'templates', 'reset-email.html');
-    const cssFilePath = path.join('src', 'mailer', 'templates', 'reset-style.css');
-
-    // Read HTML and CSS files
-    const htmlTemplate = fs.readFileSync(htmlFilePath, 'utf8');
-    const cssStyles = fs.readFileSync(cssFilePath, 'utf8');
-
-    // Embed CSS into HTML
-    const htmlContent = `
-      <style>${cssStyles}</style>
-      <body>${htmlTemplate}</body>
-    `;
-    // Extract recipient information from request body
-    const recipientName = body.name || 'User';
-    const recipientAddress = body.address || 'default@example.com';
-    const dto: SendEmailDto = {
-      recipients: [{ name: recipientName, address: recipientAddress }],
-      subject: 'Reset Password for EINGRESS',
-      html: htmlContent.replace(/%name%/g, recipientName).replace(/%reset_link%/g, body.verification_link),
-    };
-    return await this.mailerService.sendEmail(dto);
-  }
-
   @Post('/send-otp')
   async sendOtp(@Body() body: Record<string, any>) {
     console.log("Sending OTP");
