@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
-import { Observable, from, map, switchMap,mergeMap, throwError, catchError } from 'rxjs';
+import { Observable, from, map, switchMap,mergeMap, throwError, catchError, of } from 'rxjs';
 import { Employee } from '../models/employee.interface';
 import { _dbemployee } from '../models/employee.entity';
 import { _dbaccesslog } from '../../access-log/models/access-log.entity';  // Update this import path
@@ -21,30 +21,42 @@ export class EmployeeService {
 
 
     create(employee: Employee): Observable<Employee> {
+      // Set default values if they are not provided
+      if (!employee.lastlogdate) {
+        employee.lastlogdate = '';
+      }
+    
+      if (!employee.rfidtag) {
+        employee.rfidtag = null;
+      }
+    
+      if (!employee.fingerprint1) {
+        employee.fingerprint1 = '';
+      }
+    
+      if (!employee.fingerprint2) {
+        employee.fingerprint2 = '';
+      }
+    
+      // Check if fingerprint check can be skipped
+      const shouldCheckFingerprints = employee.fingerprint1 || employee.fingerprint2;
+    
+      if (!shouldCheckFingerprints) {
+        // Directly save the employee if no fingerprints are provided
+        return from(this.userRepository.save(employee)).pipe(
+          catchError(error => {
+            console.error('Error creating employee:', error);
+            return throwError(new BadRequestException('An error occurred while creating the employee.'));
+          })
+        );
+      }
+    
       return this.checkDuplicateFingerprint(employee).pipe(
         switchMap(existingEmployee => {
           if (existingEmployee) {
-            // Throw a BadRequestException with the specific error message
             throw new BadRequestException(
               `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
             );
-          }
-    
-          // Set default values if they are not provided
-          if (!employee.lastlogdate) {
-            employee.lastlogdate = '';
-          }
-    
-          if (!employee.rfidtag) {
-            employee.rfidtag = null;
-          }
-    
-          if (!employee.fingerprint1) {
-            employee.fingerprint1 = null;
-          }
-    
-          if (!employee.fingerprint2) {
-            employee.fingerprint2 = null;
           }
     
           // Save the employee to the repository
@@ -52,17 +64,15 @@ export class EmployeeService {
         }),
         catchError(error => {
           console.error('Error creating employee:', error);
-          // Check if the error is an instance of BadRequestException
           if (error instanceof BadRequestException) {
-            // Re-throw the error to be caught by the caller
             return throwError(error);
           } else {
-            // Return a generic error message for other types of errors
             return throwError(new BadRequestException('An error occurred while creating the employee.'));
           }
         })
       );
     }
+    
 
     findOne(id: number): Observable<Employee> {
         return from(this.userRepository.findOne({ where: { id } }));
@@ -129,65 +139,90 @@ export class EmployeeService {
             }),
         );
     }
-    private checkDuplicateFingerprint(employee: Employee): Observable<{ fullname: string, branch: string } | void> {
-      return from(
-        this.userRepository.findOne({
-          where: [
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint1,
-            },
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint2,
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint1,
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint2,
-            },
-          ],
-        })
-      ).pipe(
+    private checkDuplicateFingerprint(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
+      // Create a query builder instance
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
+    
+      // Add conditions to the query builder based on the fingerprints
+      if (employee.fingerprint1) {
+        queryBuilder
+          .orWhere('(user.branch = :branch AND (user.fingerprint1 = :fingerprint1 OR user.fingerprint2 = :fingerprint1))', {
+            branch: employee.branch,
+            fingerprint1: employee.fingerprint1,
+            idToExclude
+          });
+      }
+    
+      if (employee.fingerprint2) {
+        queryBuilder
+          .orWhere('(user.branch = :branch AND (user.fingerprint1 = :fingerprint2 OR user.fingerprint2 = :fingerprint2))', {
+            branch: employee.branch,
+            fingerprint2: employee.fingerprint2,
+            idToExclude
+          });
+      }
+    
+      // Exclude the current employee from the results
+      if (idToExclude) {
+        queryBuilder.andWhere('user.id != :idToExclude', { idToExclude });
+      }
+    
+      return from(queryBuilder.getOne()).pipe(
         map(existingEmployee => {
-          if (existingEmployee) {
+          if (existingEmployee && (existingEmployee.fingerprint1 || existingEmployee.fingerprint2)) {
             throw new BadRequestException(
-              `Fingerprint already exists for another employee: ${existingEmployee.fullname}`
+              `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
             );
           }
         })
       );
     }
+    
+    
     private checkDuplicateFingerprintIgnoreID(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
-      return from(
-        this.userRepository.findOne({
-          where: [
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint1,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint1: employee.fingerprint2,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint1,
-              id: Not(idToExclude),
-            },
-            {
-              branch: employee.branch,
-              fingerprint2: employee.fingerprint2,
-              id: Not(idToExclude),
-            },
-          ],
-        })
-      ).pipe(
+      const queryConditions = [];
+    
+      // Add condition for fingerprint1 if it is not an empty string
+      if (employee.fingerprint1 && employee.fingerprint1.trim() !== '') {
+        queryConditions.push(
+          {
+            branch: employee.branch,
+            fingerprint1: employee.fingerprint1,
+            id: Not(idToExclude),
+          },
+          {
+            branch: employee.branch,
+            fingerprint2: employee.fingerprint1,
+            id: Not(idToExclude),
+          }
+        );
+      }
+    
+      // Add condition for fingerprint2 if it is not an empty string
+      if (employee.fingerprint2 && employee.fingerprint2.trim() !== '') {
+        queryConditions.push(
+          {
+            branch: employee.branch,
+            fingerprint1: employee.fingerprint2,
+            id: Not(idToExclude),
+          },
+          {
+            branch: employee.branch,
+            fingerprint2: employee.fingerprint2,
+            id: Not(idToExclude),
+          }
+        );
+      }
+    
+      // If no valid fingerprints are provided, skip the check
+      if (queryConditions.length === 0) {
+        return of(undefined); // No fingerprints to check, return an observable with no value
+      }
+    
+      // Perform the query to find any existing employees with matching fingerprints
+      return from(this.userRepository.findOne({
+        where: queryConditions,
+      })).pipe(
         map(existingEmployee => {
           if (existingEmployee) {
             throw new BadRequestException(
@@ -197,7 +232,6 @@ export class EmployeeService {
         })
       );
     }
-    
     
       
       getOnlyDate(datetime: string): string {

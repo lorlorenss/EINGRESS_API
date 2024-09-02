@@ -1,4 +1,3 @@
-# First stage: Build the Angular application
 FROM node:20
 
 WORKDIR /app
@@ -10,4 +9,4 @@ COPY . .
 RUN npm run build
 
 EXPOSE 3000
-CMD [ "node" , "start" ]
+CMD [ "node" , "dist/main" ]
