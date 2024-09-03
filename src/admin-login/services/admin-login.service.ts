@@ -78,14 +78,26 @@ export class AdminLoginService {
     }
   } 
   
-  login(user: User): Observable<string | any> {
+  login(user: User): Observable<{ token: string; user: User } | string> {
     return this.validateUser(user.username, user.password).pipe(
-      switchMap((user: User) => {
-        if (user) {
-          return this.authService.generateJWT(user).pipe(
-            map((jwt: string) => jwt),
+      switchMap((validatedUser: User) => {
+        if (validatedUser) {
+          // Get the user details by ID
+          return this.findOne(validatedUser.id).pipe(
+            switchMap((userDetails: User) => {
+              return this.authService.generateJWT(userDetails).pipe(
+                map((jwt: string) => {
+                  // Log the current user details
+                  
+                  return { token: jwt, user: userDetails };
+                }),
+                catchError((error) => {
+                  return throwError('Error generating JWT');
+                })
+              );
+            }),
             catchError((error) => {
-              return throwError('Error generating JWT');
+              return throwError('Error fetching user details');
             })
           );
         } else {
@@ -99,7 +111,7 @@ export class AdminLoginService {
       })
     );
   }
-
+  
   validateUser(username: string, password: string): Observable<User> {
     return this.findbyusername(username).pipe(
       switchMap((user: User) =>
