@@ -63,20 +63,36 @@ export class AdminLoginService {
   //TRY AND ERROR
   updateOne(id: number, user: Partial<User>): Observable<User> {
     if (user.password) {
-      console.log("Update")
       return this.authService.hashPassword(user.password).pipe(
-        switchMap((hashedPassword: string) => {
-          return from(this.userRepository.update(id, { ...user, password: hashedPassword })).pipe(
+        switchMap((hashedPassword: string) => 
+          from(this.userRepository.update(id, { ...user, password: hashedPassword })).pipe(
             switchMap(() => this.findOne(id)),
-          );
-        }),
+            catchError((error) => throwError('Error updating user'))
+          )
+        ),
+        catchError((error) => throwError('Error hashing password'))
       );
     } else {
       return from(this.userRepository.update(id, user)).pipe(
         switchMap(() => this.findOne(id)),
+        catchError((error) => throwError('Error updating user'))
       );
     }
-  } 
+  }
+  
+  validateOldPassword(userId: number, oldPassword: string): Observable<boolean> {
+    return from(this.userRepository.findOne({ where: { id: userId } })).pipe(
+      switchMap(user => {
+        if (!user) {
+          return throwError(() => new Error('User not found'));
+        }
+        return this.authService.comparePassword(oldPassword, user.password).pipe(
+          map(isMatch => isMatch),
+          catchError(error => throwError(() => new Error('Error validating old password')))
+        );
+      }),
+    );
+  }
   
   login(user: User): Observable<{ token: string; user: User } | string> {
     return this.validateUser(user.username, user.password).pipe(

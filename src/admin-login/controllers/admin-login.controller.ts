@@ -15,6 +15,12 @@ export class AdminLoginController {
     );
   }
 
+  @Post('/validate-old-password')
+  validateOldPassword(@Body() body: { userId: number, oldPassword: string }): Observable<boolean> {
+    const { userId, oldPassword } = body;
+    return this.userService.validateOldPassword(userId, oldPassword);
+  }
+
 @Post('login')
 login(@Body() user: User): Observable<Object> {
     return this.userService.login(user).pipe(
