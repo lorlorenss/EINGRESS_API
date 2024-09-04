@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { _dbadmin } from '../models/user.entity';
 import { Repository } from 'typeorm';
 import { User } from '../models/user.interface';
-import { Observable, catchError, from, map, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, from, map, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from 'src/auth/service/auth.service';
 
 @Injectable()
@@ -37,11 +37,13 @@ export class AdminLoginService {
 
   findOne(id: number): Observable<User> {
     return from(this.userRepository.findOne({ where: { id } })).pipe(
-      map((user: User) => {
-        // console.log(user);
-        const { password, ...result } = user;
-        return result;
+      switchMap((user: User | null) => {
+        if (!user) {
+          return throwError(() => new Error('User not found'));
+        }
+        return of(user);
       }),
+      catchError((error) => throwError(() => new Error('Error finding user')))
     );
   }
 
@@ -152,20 +154,21 @@ export class AdminLoginService {
 
   findByEmail(email: string): Observable<User | { error: string }> {
     return from(this.userRepository.findOne({ where: { email } })).pipe(
-      map((user: User | null) => {
+      switchMap((user: User | null) => {
         if (!user) {
-          return { error: 'Email not found.' };
+          return of({ error: 'User not found' });
         }
-  
-        if (!user.verified) {
-          return { error: 'Email not verified.' };
-        }
-  
         const { password, ...result } = user;
-        return result as User;
+        return of(result as User);
       }),
-      catchError((error) => throwError('Error finding user by email'))
+      catchError((error) => throwError(() => new Error('Error finding user by email')))
     );
   }
 
+  updateUserOtp(id: number, otpPayload: { otp_code: string, otp_expiry: Date }): Observable<User> {
+    return from(this.userRepository.update(id, otpPayload)).pipe(
+      switchMap(() => this.findOne(id)), // Replace `findOne(id)` with actual method to fetch user by ID
+      catchError((error) => throwError(() => new Error('Error updating OTP')))
+    );
+  }
 }

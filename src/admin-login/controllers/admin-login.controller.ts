@@ -44,13 +44,7 @@ login(@Body() user: User): Observable<Object> {
     return this.userService.deleteOne(Number(id));
   }
 
-  // @Put(':id')
-  // updateOne(@Param('id') id: string, @Body() user: User): Observable<any> {
-  //   return this.userService.updateOne(Number(id), user);
-  // }
-
-
-  //TRY AND ERROR
+ 
   @Put(':id')
   updateOne(@Param('id') id: number, @Body() user: Partial<User>): Observable<User> {
     return this.userService.updateOne(id, user);

@@ -3,12 +3,11 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { SendEmailDto } from '../models/mail.interface';
 import * as fs from 'fs';
 import * as path from 'path';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, from, map, Observable, of, switchMap } from 'rxjs';
 import { User } from 'src/admin-login/models/user.interface';
 import { AdminLoginService } from 'src/admin-login/services/admin-login.service';
 import { randomBytes } from 'crypto';
 import { Module } from '@nestjs/common';
-
 import { MailerService } from '../services/mailer.service';
 import { AdminLoginModule } from 'src/admin-login/admin-login.module'; // Import the module
 
@@ -91,28 +90,42 @@ export class MailerController {
   @Post('/validate-email')
   validateEmail(@Body() body: { email: string }): Observable<Object> {
     return this.adminLoginService.findByEmail(body.email).pipe(
-      map((response: User | { error: string }) => {
+      switchMap((response: User | { error: string }) => {
         if ('error' in response) {
-          // Return the error if found
-          return { error: response.error };
+          return of({ error: response.error });
         }
   
         const user = response as User;
+  
         // Generate OTP only if user is verified
         if (user.verified) {
           const otpDigits = (parseInt(randomBytes(3).toString('hex'), 16) % 1000000).toString().padStart(6, '0');
           const otpPayload = {
-            name: user.username,  // Assuming user.username contains the user's name
-            address: user.email,
-            otp_digits: otpDigits,
+            otp_code: otpDigits,  // Set OTP code
+            otp_expiry: new Date(new Date().getTime() + 10 * 60 * 1000),  // OTP expires in 10 minutes
           };
-          this.sendOtp(otpPayload);  // Send the OTP
-          return { message: 'OTP sent to your email address.' };
+  
+          // Update the user's OTP code and expiry
+          return this.adminLoginService.updateUserOtp(user.id, otpPayload).pipe(
+            switchMap(() => {
+              // Convert sendOtp() promise to observable
+              return from(this.sendOtp({
+                name: user.username,
+                address: user.email,
+                otp_digits: otpDigits,
+              })).pipe(
+                map(() => ({ message: 'OTP sent to your email address.' })),
+                catchError((err) => of({ error: err.message }))
+              );
+            }),
+            catchError((err) => of({ error: err.message }))
+          );
         } else {
-          return { error: 'Email not verified.' };
+          return of({ error: 'Email not verified.' });
         }
       }),
       catchError((err) => of({ error: err.message }))
     );
   }
+  
 }
