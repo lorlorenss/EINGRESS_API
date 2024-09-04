@@ -83,7 +83,7 @@ export class AdminLoginService {
   updateOne(id: number, user: Partial<User>): Observable<User> {
     console.log("Updating user")
     let emailChanged = false;
-    
+    let verificationLink = '';
     return this.findOne(id).pipe(
       switchMap(existingUser => {
         if (!existingUser) {
@@ -93,26 +93,16 @@ export class AdminLoginService {
         if (user.email && user.email !== existingUser.email) {
           console.log("Email changed")
           emailChanged = true;
-          // // Generate verification token
-          const token = uuidv4(); // Generate a unique token
-          const verifyToken = `${this.apiUrl}mailer/${token}`;
+          verificationLink = `${this.apiUrl}users/${id}`;
+          
           const tokenExpiry = new Date();
           tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Set expiry 24 hours from now
   
           // Update the user object with the new token, expiry, and set verified to false
-          user.verify_token = verifyToken;
+          user.verify_token = verificationLink;
           user.token_expiry = tokenExpiry;
           user.verified = false;
-  
-          //Send verification email
-          // this.httpService.post(`${this.apiUrl}mailer/send-verification`, {
-          //   name: existingUser.username,
-          //   address: user.email,
-          //   verification_link: verifyToken
-          // }).subscribe({
-          //   next: () => console.log('Verification email sent successfully'),
-          //   error: (err) => console.error('Error sending verification email:', err)
-          // });
+          
         }
   
         // Update user details
