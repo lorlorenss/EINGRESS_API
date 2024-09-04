@@ -1,12 +1,21 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { MailerService } from '../services/mailer.service';
+
 import { SendEmailDto } from '../models/mail.interface';
 import * as fs from 'fs';
 import * as path from 'path';
+import { catchError, map, Observable, of } from 'rxjs';
+import { User } from 'src/admin-login/models/user.interface';
+import { AdminLoginService } from 'src/admin-login/services/admin-login.service';
+import { randomBytes } from 'crypto';
+import { Module } from '@nestjs/common';
+
+import { MailerService } from '../services/mailer.service';
+import { AdminLoginModule } from 'src/admin-login/admin-login.module'; // Import the module
 
 @Controller('mailer')
 export class MailerController {
-  constructor(private readonly mailerService: MailerService) { }
+
+  constructor(private readonly mailerService: MailerService, private adminLoginService: AdminLoginService) { }
 
   @Post('/send-verification')
   async sendVerification(@Body() body: Record<string, string>) {
@@ -39,7 +48,7 @@ export class MailerController {
 
 
   @Post('/send-otp')
-  async sendOtp(@Body() body: Record<string, any>) {
+  async sendOtp(@Body() body: { name: string, address: string, otp_digits: string }) {
     console.log("Sending OTP");
 
     // Define file paths relative to the current file's location
@@ -51,8 +60,7 @@ export class MailerController {
     const cssStyles = fs.readFileSync(cssFilePath, 'utf8');
 
     // Replace placeholders in the HTML
-    const otp = body.otp_digits ? String(body.otp_digits) : '000000';
-    const otpDigits = otp.split('').map(digit => `<span class="otp-text">${digit}</span>`).join('');
+    const otpDigits = body.otp_digits.split('').map(digit => `<span class="otp-text">${digit}</span>`).join('');
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -68,15 +76,43 @@ export class MailerController {
         </body>
         </html>
       `;
-    const recipientName = body.name || 'User';
-    const recipientAddress = body.address || 'default@example.com';
-    const dto: SendEmailDto = {
-      // from: { name: 'Eingress', address: 'eingress@email.com'},
-      recipients: [{ name: recipientName, address: recipientAddress }],
+
+    const dto = {
+      recipients: [{ name: body.name, address: body.address }],
       subject: 'OTP For EINGRESS',
       html: htmlContent.replace(/%name%/g, body.name).replace(/%otp_digits%/g, otpDigits),
     };
 
-    return await this.mailerService.sendEmail(dto);
+    await this.mailerService.sendEmail(dto);
+  }
+
+
+
+  @Post('/validate-email')
+  validateEmail(@Body() body: { email: string }): Observable<Object> {
+    return this.adminLoginService.findByEmail(body.email).pipe(
+      map((response: User | { error: string }) => {
+        if ('error' in response) {
+          // Return the error if found
+          return { error: response.error };
+        }
+  
+        const user = response as User;
+        // Generate OTP only if user is verified
+        if (user.verified) {
+          const otpDigits = (parseInt(randomBytes(3).toString('hex'), 16) % 1000000).toString().padStart(6, '0');
+          const otpPayload = {
+            name: user.username,  // Assuming user.username contains the user's name
+            address: user.email,
+            otp_digits: otpDigits,
+          };
+          this.sendOtp(otpPayload);  // Send the OTP
+          return { message: 'OTP sent to your email address.' };
+        } else {
+          return { error: 'Email not verified.' };
+        }
+      }),
+      catchError((err) => of({ error: err.message }))
+    );
   }
 }

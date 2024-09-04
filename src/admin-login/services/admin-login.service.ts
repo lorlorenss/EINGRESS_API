@@ -149,4 +149,23 @@ export class AdminLoginService {
     return from(this.userRepository.findOne({ where: { username } }));
 
   }
+
+  findByEmail(email: string): Observable<User | { error: string }> {
+    return from(this.userRepository.findOne({ where: { email } })).pipe(
+      map((user: User | null) => {
+        if (!user) {
+          return { error: 'Email not found.' };
+        }
+  
+        if (!user.verified) {
+          return { error: 'Email not verified.' };
+        }
+  
+        const { password, ...result } = user;
+        return result as User;
+      }),
+      catchError((error) => throwError('Error finding user by email'))
+    );
+  }
+
 }
