@@ -7,7 +7,7 @@ export interface User {
     role?: UserRole;
     email: string;
     verified: boolean;
-    reset_token: string;
+    verify_token: string;
     token_expiry: Date;
     otp_code?: string; 
     otp_expiry?: Date;

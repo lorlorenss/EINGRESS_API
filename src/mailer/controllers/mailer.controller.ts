@@ -17,34 +17,57 @@ export class MailerController {
   constructor(private readonly mailerService: MailerService, private adminLoginService: AdminLoginService) { }
 
   @Post('/send-verification')
-  async sendVerification(@Body() body: Record<string, string>) {
+  sendVerification(@Body() body: Record<string, string>) {
     console.log("Sending verification");
-
+  
     // Define file paths relative to the current file's location
     const htmlFilePath = path.join('src', 'mailer', 'templates', 'verification-email.html');
     const cssFilePath = path.join('src', 'mailer', 'templates', 'verification-style.css');
-
+  
     // Read HTML and CSS files
     const htmlTemplate = fs.readFileSync(htmlFilePath, 'utf8');
     const cssStyles = fs.readFileSync(cssFilePath, 'utf8');
-
+  
+    const tokenExpiry = new Date();
+    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Set expiry 24 hours from now
+  
+    // Format the date using native JavaScript
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true
+    };
+    const expiryDateFormatted = tokenExpiry.toLocaleString('en-US', options);
+  
     // Embed CSS into HTML
     const htmlContent = `
-          <style>${cssStyles}</style>
-          <div>${htmlTemplate}</div>
+      <style>${cssStyles}</style>
+      <div>${htmlTemplate}</div>
     `;
-    const recipientName = body.name || 'User';
-    const recipientAddress = body.address || 'default@example.com';
+  
+    // Create the email DTO with replaced placeholders
     const dto: SendEmailDto = {
-      // from: { name: 'Eingress', address: 'eingress@email.com'},
-      recipients: [{ name: recipientName, address: recipientAddress }],
+      recipients: [{ name: body.name || 'User', address: body.address || 'default@example.com' }],
       subject: 'Account Email Verification for EINGRESS',
-      html: htmlContent.replace(/%name%/g, body.name).replace(/%verification_link%/g, body.verification_link),
+      html: htmlContent
+        .replace(/%name%/g, body.name)
+        .replace(/%verification_link%/g, body.verification_link)
+        .replace(/%expiry_date%/g, expiryDateFormatted),
     };
-
-    return await this.mailerService.sendEmail(dto);
+  
+    // Use from to convert the promise returned by sendEmail to an observable
+    return from(this.mailerService.sendEmail(dto)).pipe(
+      map(() => ({ message: 'Verification email sent successfully' })),
+      catchError((err) => {
+        console.error('Error sending verification email:', err);
+        return of({ error: err.message });
+      })
+    );
   }
-
 
   @Post('/send-otp')
   async sendOtp(@Body() body: { name: string, address: string, otp_digits: string }) {
@@ -94,9 +117,9 @@ export class MailerController {
         if ('error' in response) {
           return of({ error: response.error });
         }
-  
+
         const user = response as User;
-  
+
         // Generate OTP only if user is verified
         if (user.verified) {
           const otpDigits = (parseInt(randomBytes(3).toString('hex'), 16) % 1000000).toString().padStart(6, '0');
@@ -104,7 +127,7 @@ export class MailerController {
             otp_code: otpDigits,  // Set OTP code
             otp_expiry: new Date(new Date().getTime() + 10 * 60 * 1000),  // OTP expires in 10 minutes
           };
-  
+
           // Update the user's OTP code and expiry
           return this.adminLoginService.updateUserOtp(user.id, otpPayload).pipe(
             switchMap(() => {
@@ -127,5 +150,5 @@ export class MailerController {
       catchError((err) => of({ error: err.message }))
     );
   }
-  
+
 }

@@ -26,7 +26,7 @@ export class _dbadmin {
   verified: boolean;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  reset_token: string;
+  verify_token: string;
 
   @Column({ type: 'timestamp', nullable: true })
   token_expiry: Date;

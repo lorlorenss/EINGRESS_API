@@ -32,8 +32,8 @@ export class MailerService {
         );
     }
 
-    async sendEmail(dto: SendEmailDto){
-        const {from, recipients, subject} = dto;
+    async sendEmail(dto: SendEmailDto): Promise<any> {
+        const { from, recipients, subject } = dto;
         const html = dto.placeholderReplacements ? this.template(dto.html, dto.placeholderReplacements) : dto.html;
         const transport = this.mailTransport();
         const options: Mail.Options = {
@@ -44,13 +44,15 @@ export class MailerService {
             to: recipients,
             subject,
             html
-        }
+        };
+    
         try {
-            const result = await transport.sendMail(options)
+            const result = await transport.sendMail(options);
             return result;
-        }
-        catch (error){
-            console.log("Error: ", error)
+        } catch (error) {
+            console.error("Error sending email: ", error);
+            throw new Error('Failed to send email');
         }
     }
+    
 }

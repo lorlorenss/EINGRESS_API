@@ -1,5 +1,5 @@
-import {Body,Controller,Get,Param,Post,Delete,Put, UseGuards, Query,} from '@nestjs/common';
-import { Observable, catchError, map, of } from 'rxjs';
+import {Body,Controller,Get,Param,Post,Delete,Put, UseGuards, Query, HttpException, HttpStatus,} from '@nestjs/common';
+import { Observable, catchError, map, of, switchMap } from 'rxjs';
 import { User } from '../models/user.interface';
 import { AdminLoginService } from '../services/admin-login.service';
 
@@ -46,7 +46,27 @@ login(@Body() user: User): Observable<Object> {
 
  
   @Put(':id')
-  updateOne(@Param('id') id: number, @Body() user: Partial<User>): Observable<User> {
-    return this.userService.updateOne(id, user);
+  updateOne(@Param('id') id: number, @Body() user: Partial<User>): Observable<{ message: string; user: User }> {
+    return this.userService.findOne(id).pipe( // Assuming this method gets the existing user
+      switchMap(existingUser => 
+        this.userService.updateOne(id, user).pipe(
+          map(updatedUser => {
+            // Check if the email was changed
+            const emailChanged = user.email && user.email !== existingUser.email;
+  
+            const message = emailChanged
+              ? 'User updated successfully with new email'
+              : 'User updated successfully with same email';
+  
+            return { message, user: updatedUser };
+          }),
+          catchError(error => {
+            console.error('Error updating user:', error);
+            throw new HttpException('Error updating user', HttpStatus.INTERNAL_SERVER_ERROR);
+          })
+        )
+      )
+    );
   }
+  
 }

@@ -1,21 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { _dbadmin } from '../models/user.entity';
 import { Repository } from 'typeorm';
 import { User } from '../models/user.interface';
 import { Observable, catchError, from, map, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from 'src/auth/service/auth.service';
+import { v4 as uuidv4} from 'uuid';
+import { HttpModule } from '@nestjs/axios';
+import { environment } from 'src/environments/environment.prod';
+import { Module } from '@nestjs/common';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([_dbadmin]),
+    HttpModule,
+  ],
+  providers: [AdminLoginService, AuthService],
+  exports: [AdminLoginService],
+})
+
 
 @Injectable()
 export class AdminLoginService {
+
+  private apiUrl = `${environment.baseURL}api/`;
   [x: string]: any;
   constructor(
     @InjectRepository(_dbadmin)
     private readonly userRepository: Repository<_dbadmin>,
-    private authService: AuthService,
+    private readonly authService: AuthService,
   ) {}
 
   create(user: User): Observable<User> {
+
     return this.authService.hashPassword(user.password).pipe(
       switchMap((passwordHash: string) => {
         const newUser = new _dbadmin();
@@ -61,25 +78,63 @@ export class AdminLoginService {
   deleteOne(id: number): Observable<any> {
     return from(this.userRepository.delete(id));
   }
-  
+
   //TRY AND ERROR
   updateOne(id: number, user: Partial<User>): Observable<User> {
-    if (user.password) {
-      return this.authService.hashPassword(user.password).pipe(
-        switchMap((hashedPassword: string) => 
-          from(this.userRepository.update(id, { ...user, password: hashedPassword })).pipe(
+    console.log("Updating user")
+    let emailChanged = false;
+    
+    return this.findOne(id).pipe(
+      switchMap(existingUser => {
+        if (!existingUser) {
+          return throwError(() => new Error('User not found'));
+        }
+  
+        if (user.email && user.email !== existingUser.email) {
+          console.log("Email changed")
+          emailChanged = true;
+          // // Generate verification token
+          const token = uuidv4(); // Generate a unique token
+          const verifyToken = `${this.apiUrl}mailer/${token}`;
+          const tokenExpiry = new Date();
+          tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Set expiry 24 hours from now
+  
+          // Update the user object with the new token, expiry, and set verified to false
+          user.verify_token = verifyToken;
+          user.token_expiry = tokenExpiry;
+          user.verified = false;
+  
+          //Send verification email
+          // this.httpService.post(`${this.apiUrl}mailer/send-verification`, {
+          //   name: existingUser.username,
+          //   address: user.email,
+          //   verification_link: verifyToken
+          // }).subscribe({
+          //   next: () => console.log('Verification email sent successfully'),
+          //   error: (err) => console.error('Error sending verification email:', err)
+          // });
+        }
+  
+        // Update user details
+        if (user.password) {
+          return this.authService.hashPassword(user.password).pipe(
+            switchMap((hashedPassword: string) => 
+              from(this.userRepository.update(id, { ...user, password: hashedPassword })).pipe(
+                switchMap(() => this.findOne(id)),
+                catchError((error) => throwError(() => new Error('Error updating user')))
+              )
+            ),
+            catchError((error) => throwError(() => new Error('Error hashing password')))
+          );
+        } else {
+          return from(this.userRepository.update(id, user)).pipe(
             switchMap(() => this.findOne(id)),
-            catchError((error) => throwError('Error updating user'))
-          )
-        ),
-        catchError((error) => throwError('Error hashing password'))
-      );
-    } else {
-      return from(this.userRepository.update(id, user)).pipe(
-        switchMap(() => this.findOne(id)),
-        catchError((error) => throwError('Error updating user'))
-      );
-    }
+            catchError((error) => throwError(() => new Error('Error updating user')))
+          );
+        }
+      }),
+      catchError((error) => throwError(() => new Error('Error finding user')))
+    );
   }
   
   validateOldPassword(userId: number, oldPassword: string): Observable<boolean> {
