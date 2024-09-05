@@ -9,6 +9,7 @@ import { v4 as uuidv4} from 'uuid';
 import { HttpModule } from '@nestjs/axios';
 import { environment } from 'src/environments/environment.prod';
 import { Module } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 
 @Module({
   imports: [
@@ -83,26 +84,20 @@ export class AdminLoginService {
   updateOne(id: number, user: Partial<User>): Observable<User> {
     console.log("Updating user")
     let emailChanged = false;
-    let verificationLink = '';
     return this.findOne(id).pipe(
       switchMap(existingUser => {
         if (!existingUser) {
           return throwError(() => new Error('User not found'));
         }
-  
-        if (user.email && user.email !== existingUser.email) {
-          console.log("Email changed")
+        //if there are changes in email
+        if (user.email && user.email !== existingUser.email) { 
+          console.log("Email changed");
           emailChanged = true;
-          verificationLink = `${this.apiUrl}users/${id}`;
           
-          const tokenExpiry = new Date();
-          tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Set expiry 24 hours from now
-  
-          // Update the user object with the new token, expiry, and set verified to false
-          user.verify_token = verificationLink;
-          user.token_expiry = tokenExpiry;
+          // Generate OTP and set verification properties
+          user.verify_otp = (parseInt(randomBytes(3).toString('hex'), 16) % 1000000).toString().padStart(6, '0');
+          user.verify_expiry = new Date(new Date().getTime() + 10 * 60 * 1000); // OTP expiry in 10 minutes
           user.verified = false;
-          
         }
   
         // Update user details
@@ -216,4 +211,5 @@ export class AdminLoginService {
       catchError((error) => throwError(() => new Error('Error updating OTP')))
     );
   }
+
 }

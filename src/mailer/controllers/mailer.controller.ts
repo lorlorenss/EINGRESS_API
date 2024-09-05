@@ -27,36 +27,29 @@ export class MailerController {
     // Read HTML and CSS files
     const htmlTemplate = fs.readFileSync(htmlFilePath, 'utf8');
     const cssStyles = fs.readFileSync(cssFilePath, 'utf8');
-  
-    const tokenExpiry = new Date();
-    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Set expiry 24 hours from now
-  
-    // Format the date using native JavaScript
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true
-    };
-    const expiryDateFormatted = tokenExpiry.toLocaleString('en-US', options);
-  
+
+    const verificationOtp = body.verification_otp.split('').map(digit => `<span class="otp-text">${digit}</span>`).join('');
     // Embed CSS into HTML
     const htmlContent = `
-      <style>${cssStyles}</style>
-      <div>${htmlTemplate}</div>
+       <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Account OTP Verification</title>
+            <style>${cssStyles}</style>
+        </head>
+        <body>
+            ${htmlTemplate}
+        </body>
+        </html>
     `;
   
     // Create the email DTO with replaced placeholders
-    const dto: SendEmailDto = {
-      recipients: [{ name: body.name || 'User', address: body.address || 'default@example.com' }],
-      subject: 'Account Email Verification for EINGRESS',
-      html: htmlContent
-        .replace(/%name%/g, body.name)
-        .replace(/%verification_link%/g, body.verification_link)
-        .replace(/%expiry_date%/g, expiryDateFormatted),
+    const dto = {
+      recipients: [{ name: body.name, address: body.address }],
+      subject: 'Account Email Verification OTP For EINGRESS',
+      html: htmlContent.replace(/%name%/g, body.name).replace(/%verification_otp%/g, verificationOtp),
     };
   
     // Use from to convert the promise returned by sendEmail to an observable
@@ -101,7 +94,7 @@ export class MailerController {
 
     const dto = {
       recipients: [{ name: body.name, address: body.address }],
-      subject: 'OTP For EINGRESS',
+      subject: 'Reset Password OTP For EINGRESS',
       html: htmlContent.replace(/%name%/g, body.name).replace(/%otp_digits%/g, otpDigits),
     };
 

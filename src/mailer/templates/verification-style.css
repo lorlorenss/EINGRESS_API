@@ -1,4 +1,4 @@
-/* email-style.css */
+/* reset-style.css */
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
@@ -16,7 +16,7 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 .email-header {
-    background-color: #0b203f;
+    background-color: #2196F3;
     color: #ffffff;
     padding: 20px;
 }
@@ -33,15 +33,24 @@ body {
     line-height: 1.5;
     margin: 0 0 10px;
 }
-.verify-button {
-    display: inline-block;
-    padding: 10px 20px;
-    font-size: 16px;
-    color: #ffffff;
-    background-color: #4CAF50;
-    text-decoration: none;
-    border-radius: 5px;
+.otp-display {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
 }
+.otp-text {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    width: 30px;
+}
+
 .email-footer {
     background-color: #f4f4f4;
     padding: 10px;

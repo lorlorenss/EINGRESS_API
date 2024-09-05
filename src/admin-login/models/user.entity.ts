@@ -26,10 +26,10 @@ export class _dbadmin {
   verified: boolean;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  verify_token: string;
+  verify_otp: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  token_expiry: Date;
+  verify_expiry: Date;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   otp_code: string;
