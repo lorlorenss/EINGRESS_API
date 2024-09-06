@@ -105,6 +105,7 @@ export class MailerController {
 
   @Post('/validate-email')
   validateEmail(@Body() body: { email: string }): Observable<Object> {
+    console.log("Validating email: ", body.email)
     return this.adminLoginService.findByEmail(body.email).pipe(
       switchMap((response: User | { error: string }) => {
         if ('error' in response) {

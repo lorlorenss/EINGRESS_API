@@ -137,7 +137,7 @@ export class AdminLoginService {
   }
   
   login(user: User): Observable<{ token: string; user: User } | string> {
-    return this.validateUser(user.username, user.password).pipe(
+    return this.validateUser(user.email, user.password).pipe(
       switchMap((validatedUser: User) => {
         if (validatedUser) {
           // Get the user details by ID
@@ -170,8 +170,8 @@ export class AdminLoginService {
     );
   }
   
-  validateUser(username: string, password: string): Observable<User> {
-    return this.findbyusername(username).pipe(
+  validateUser(email: string, password: string): Observable<User> {
+    return this.findbyusername(email).pipe(
       switchMap((user: User) =>
         this.authService.comparePassword(password, user.password).pipe(
           map((match: boolean) => {
