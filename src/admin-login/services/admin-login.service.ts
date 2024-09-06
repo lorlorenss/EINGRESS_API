@@ -212,4 +212,30 @@ export class AdminLoginService {
     );
   }
 
+  validateResetOtp(email: string, otp: string): Observable<User | { error: string }> {
+    return from(this.userRepository.findOne({ where: { email } })).pipe(
+      switchMap((user: User | null) => {
+        if (!user) {
+          return of({ error: 'User not found' });
+        }
+
+        const now = new Date();
+
+        // Check if OTP is expired
+        if (now >= user.otp_expiry) {
+          return of({ error: 'OTP expired' });
+        }
+
+        // Check if OTP is invalid
+        if (user.otp_code !== otp) {
+          return of({ error: 'Invalid OTP' });
+        }
+
+        // If everything is valid, return user
+        return of(user);
+      }),
+      catchError((error) => throwError(() => new Error('Error validating OTP')))
+    );
+  }
+
 }

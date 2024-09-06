@@ -1,5 +1,5 @@
 import {Body,Controller,Get,Param,Post,Delete,Put, UseGuards, Query, HttpException, HttpStatus,} from '@nestjs/common';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, throwError } from 'rxjs';
 import { User } from '../models/user.interface';
 import { AdminLoginService } from '../services/admin-login.service';
 
@@ -66,6 +66,41 @@ login(@Body() user: User): Observable<Object> {
           })
         )
       )
+    );
+  }
+
+
+  @Post('/validate-ResetOtp')
+  validateResetOtp(@Body() body: { email: string, otp: string }): Observable<{ message: string, id?: number }> {
+    const { email, otp } = body;
+    console.log("Validating Reset OTP for:", email);
+
+    return this.userService.findByEmail(email).pipe(
+      switchMap((user) => {
+        if ('error' in user) {
+          // If user is not found, return an error message
+          return throwError(() => new Error('User not found'));
+        }
+
+        const now = new Date();
+
+        // Check if the OTP has expired
+        if (now >= user.otp_expiry) {
+          return throwError(() => new Error('OTP expired'));
+        }
+
+        // Check if the OTP is invalid
+        if (user.otp_code !== otp) {
+          return throwError(() => new Error('Invalid OTP'));
+        }
+
+        // If the OTP is valid, return success message and user id
+        return of({ message: 'OTP validated successfully', id: user.id });
+      }),
+      catchError((err) => {
+        // Handle errors and return the specific message
+        return of({ message: err.message });
+      })
     );
   }
   
