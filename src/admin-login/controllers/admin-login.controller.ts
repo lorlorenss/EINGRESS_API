@@ -73,7 +73,7 @@ login(@Body() user: User): Observable<Object> {
   @Post('/validate-ResetOtp')
   validateResetOtp(@Body() body: { email: string, otp: string }): Observable<{ message: string, id?: number }> {
     const { email, otp } = body;
-    console.log("Validating Reset OTP for:", email);
+    console.log("Validating Reset OTP for:", email, "With OTP: ", otp);
 
     return this.userService.findByEmail(email).pipe(
       switchMap((user) => {
@@ -95,6 +95,7 @@ login(@Body() user: User): Observable<Object> {
         }
 
         // If the OTP is valid, return success message and user id
+        console.log("OTP validated successfully")
         return of({ message: 'OTP validated successfully', id: user.id });
       }),
       catchError((err) => {

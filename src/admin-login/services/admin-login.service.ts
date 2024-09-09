@@ -137,7 +137,7 @@ export class AdminLoginService {
   }
   
   login(user: User): Observable<{ token: string; user: User } | string> {
-    return this.validateUser(user.email, user.password).pipe(
+    return this.validateUser(user.username, user.password).pipe(
       switchMap((validatedUser: User) => {
         if (validatedUser) {
           // Get the user details by ID
