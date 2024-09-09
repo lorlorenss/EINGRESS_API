@@ -78,7 +78,7 @@ login(@Body() user: User): Observable<Object> {
     return this.userService.findByEmail(email).pipe(
       switchMap((user) => {
         if ('error' in user) {
-          // If user is not found, return an error message
+          console.log("User not found");
           return throwError(() => new Error('User not found'));
         }
 
@@ -86,11 +86,13 @@ login(@Body() user: User): Observable<Object> {
 
         // Check if the OTP has expired
         if (now >= user.otp_expiry) {
+          console.log("OTP Expired")
           return throwError(() => new Error('OTP expired'));
         }
 
         // Check if the OTP is invalid
         if (user.otp_code !== otp) {
+          console.log("Invalid OTP")
           return throwError(() => new Error('Invalid OTP'));
         }
 

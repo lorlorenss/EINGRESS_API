@@ -192,18 +192,23 @@ export class AdminLoginService {
 
   }
 
-  findByEmail(email: string): Observable<User | { error: string }> {
-    return from(this.userRepository.findOne({ where: { email } })).pipe(
-      switchMap((user: User | null) => {
-        if (!user) {
-          return of({ error: 'User not found' });
-        }
-        const { password, ...result } = user;
-        return of(result as User);
-      }),
-      catchError((error) => throwError(() => new Error('Error finding user by email')))
-    );
-  }
+findByEmail(email: string): Observable<User | { error: string }> {
+  return from(
+    this.userRepository.createQueryBuilder('user')
+      .where('LOWER(user.email) = LOWER(:email)', { email })
+      .getOne()
+  ).pipe(
+    switchMap((user: User | null) => {
+      if (!user) {
+        return of({ error: 'User not found' });
+      }
+      const { password, ...result } = user;
+      return of(result as User);
+    }),
+    catchError((error) => throwError(() => new Error('Error finding user by email')))
+  );
+}
+
 
   updateUserOtp(id: number, otpPayload: { otp_code: string, otp_expiry: Date }): Observable<User> {
     return from(this.userRepository.update(id, otpPayload)).pipe(
@@ -216,6 +221,7 @@ export class AdminLoginService {
     return from(this.userRepository.findOne({ where: { email } })).pipe(
       switchMap((user: User | null) => {
         if (!user) {
+          
           return of({ error: 'User not found' });
         }
 
@@ -223,11 +229,13 @@ export class AdminLoginService {
 
         // Check if OTP is expired
         if (now >= user.otp_expiry) {
+          
           return of({ error: 'OTP expired' });
         }
 
         // Check if OTP is invalid
         if (user.otp_code !== otp) {
+          
           return of({ error: 'Invalid OTP' });
         }
 
