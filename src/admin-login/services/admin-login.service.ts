@@ -137,7 +137,7 @@ export class AdminLoginService {
   }
   
   login(user: User): Observable<{ token: string; user: User } | string> {
-    return this.validateUser(user.username, user.password).pipe(
+    return this.validateUser(user.email, user.password).pipe(
       switchMap((validatedUser: User) => {
         if (validatedUser) {
           // Get the user details by ID
@@ -187,8 +187,8 @@ export class AdminLoginService {
     );
   }
 
-  findbyusername(username: string): Observable<User> {
-    return from(this.userRepository.findOne({ where: { username } }));
+  findbyusername(email: string): Observable<User> {
+    return from(this.userRepository.findOne({ where: { email } }));
 
   }
 
