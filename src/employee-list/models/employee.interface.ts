@@ -9,6 +9,8 @@ export interface Employee {
   profileImage?: string;
   fingerprint1?: string;
   fingerprint2?: string;
+  template1?: string;
+  template2?: string;
   rfidtag?: string;
   branch: string;
 }

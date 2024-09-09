@@ -39,8 +39,10 @@ export class _dbemployee {
   fingerprint1: string;
   @Column({ nullable: true})
   fingerprint2: string;
-  // @Column({ nullable: true })
-  // profileImagePath?: string;
+  @Column({ nullable: true})
+  template1: string;
+  @Column({ nullable: true})
+  template2: string;
   @Column({ nullable: true})
   branch: string;
 
