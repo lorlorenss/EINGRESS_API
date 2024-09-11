@@ -119,9 +119,9 @@ export class MailerController {
           const otpDigits = (parseInt(randomBytes(3).toString('hex'), 16) % 1000000).toString().padStart(6, '0');
           const otpPayload = {
             otp_code: otpDigits,  // Set OTP code
-            otp_expiry: new Date(new Date().getTime() + 10 * 60 * 1000),  // OTP expires in 10 minutes
+            otp_expiry: new Date(new Date().getTime() + 5 * 60 * 1000),  // OTP expires in 5 minutes
           };
-
+          console.log("Updating otp")
           // Update the user's OTP code and expiry
           return this.adminLoginService.updateUserOtp(user.id, otpPayload).pipe(
             switchMap(() => {
