@@ -40,5 +40,6 @@ export class _dbadmin {
   @Column({ type: 'varchar', length: 255, nullable: true })
   profileImage?: string;
 
-
+  @Column({ type: 'timestamp', nullable: true })
+  lastEmailChange: Date;
 }
