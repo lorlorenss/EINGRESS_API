@@ -240,7 +240,7 @@ export class EmployeeService {
       where: queryConditions,
     })).pipe(
       map(existingEmployee => {
-        if (existingEmployee.deldate === null) {
+        if (existingEmployee && existingEmployee.deldate === null) {
           throw new BadRequestException(
             `Fingerprint already exists for another employee: ${existingEmployee.fullname} in branch: ${existingEmployee.branch}.`
           );
@@ -248,6 +248,7 @@ export class EmployeeService {
       })
     );
   }
+  
   
 
 
