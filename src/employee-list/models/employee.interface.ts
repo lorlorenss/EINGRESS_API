@@ -13,4 +13,5 @@ export interface Employee {
   template2?: string;
   rfidtag?: string;
   branch: string;
+  deldate?:Date;
 }

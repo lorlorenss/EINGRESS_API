@@ -6,7 +6,7 @@ export class _dbemployee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   fullname: string;
 
   @Column()
@@ -45,6 +45,10 @@ export class _dbemployee {
   template2: string;
   @Column({ nullable: true})
   branch: string;
+
+  @Column({ type: 'date',  nullable: true})
+  deldate: Date;
+
 
   @OneToMany(() => _dbaccesslog, (accessLog) => accessLog.employee)
   accessLogs: _dbaccesslog[]; // One-to-many relationship with AccessLog

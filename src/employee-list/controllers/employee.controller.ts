@@ -58,6 +58,7 @@ export class EmployeeController {
 
   @Delete(':id') //this code will delete the user and its logs
   deleteOne(@Param('id') id: string): Observable<any> {
+    console.log("Deleting User id: ", id)
     return this.userService.deleteEmployeeWithAccessLogs(Number(id)).pipe(
       catchError(error => {
         throw new NotFoundException('User not found');
@@ -94,6 +95,7 @@ export class EmployeeController {
   @Put(':id')
   @UseInterceptors(FileInterceptor('file', storage))
   updateOne(@Param('id') id: string, @Body() payload: { employee: Employee }, @UploadedFile() file): Observable<any> {
+    console.log("Updating employee id: ", id)
     return this.userService.findOne(Number(id)).pipe(
       catchError(() => {
         throw new NotFoundException(`Employee with ID ${id} not found`);
