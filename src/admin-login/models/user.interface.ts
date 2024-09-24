@@ -13,4 +13,9 @@ export interface User {
     otp_expiry?: Date;
     profileImage?: string;
     lastEmailChange?: Date;
+    bday?: string;
+    number?: string;
+    age?: string;
+    address?: string;
+    gender?: string;
   }

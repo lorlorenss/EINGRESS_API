@@ -42,4 +42,19 @@ export class _dbadmin {
 
   @Column({ type: 'timestamp', nullable: true })
   lastEmailChange: Date;
+
+  @Column({nullable: true })
+  bday: string;
+
+  @Column({nullable: true })
+  phone: string;
+
+  @Column({nullable: true })
+  age: string;
+
+  @Column({nullable: true })
+  address: string;
+
+  @Column({nullable: true })
+  number: string;
 }
