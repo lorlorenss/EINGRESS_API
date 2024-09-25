@@ -123,18 +123,27 @@ export class AdminLoginService {
   }
   
   validateOldPassword(userId: number, oldPassword: string): Observable<boolean> {
+    console.log("Validating old password");
     return from(this.userRepository.findOne({ where: { id: userId } })).pipe(
       switchMap(user => {
         if (!user) {
+          console.error('User not found');
           return throwError(() => new Error('User not found'));
         }
         return this.authService.comparePassword(oldPassword, user.password).pipe(
-          map(isMatch => isMatch),
-          catchError(error => throwError(() => new Error('Error validating old password')))
+          map(isMatch => {
+            console.log(`Password match result: ${isMatch}`);
+            return isMatch; // This should be false if the password is incorrect
+          }),
+          catchError(error => {
+            console.error('Error validating old password', error);
+            return throwError(() => new Error('Error validating old password'));
+          })
         );
       }),
     );
   }
+  
   
   login(user: User): Observable<{ token: string; user: User } | string> {
     return this.validateUser(user.email, user.password).pipe(
