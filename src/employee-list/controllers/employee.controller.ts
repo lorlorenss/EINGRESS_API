@@ -31,9 +31,15 @@ export class EmployeeController {
   @UseInterceptors(FileInterceptor('file'))
   create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
     if (!file) {
-      const specificFilePath = 'max-smith.png';
+      
+      
       const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
+
+      const nameOfFile = updatedEmployeeData.fullname;
+
+      const specificFilePath = nameOfFile + '.png';
       console.log('typeof ', updatedEmployeeData);
+      console.log('fullname is ' + nameOfFile);
 
       return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath });
     }
