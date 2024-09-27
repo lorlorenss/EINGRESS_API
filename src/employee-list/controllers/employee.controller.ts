@@ -28,8 +28,21 @@ export class EmployeeController {
 
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  create(@Body() payload: { employee: Employee }, @UploadedFile() file): Observable<Employee | Object> {
+  @UseInterceptors(FileInterceptor('file', storage))
+  create(@Body() payload: { employee: string }, @UploadedFile() file): Observable<Employee | Object> {
+    // Parse the employee JSON string
+    let updatedEmployeeData: Employee;
+
+    try {
+      updatedEmployeeData = JSON.parse(payload.employee);
+    } catch (error) {
+      console.error('Error parsing employee data:', error);
+      throw new BadRequestException('Invalid employee data');
+    }
+
+    console.log('Parsed Employee Data:', updatedEmployeeData);
+
+    // If no file is uploaded, use a default image path
     if (!file) {
       
       
@@ -44,12 +57,9 @@ export class EmployeeController {
       return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath });
     }
 
-    const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
-    console.log('typeof ', updatedEmployeeData);
+    // If a file is uploaded, proceed with the file's filename
     return this.userService.create({ ...updatedEmployeeData, profileImage: file.filename });
   }
-
-
 
   @Get(':id') // Route for findOne
   findOne(@Param('id', ParseIntPipe) id: number): Observable<Employee> {
