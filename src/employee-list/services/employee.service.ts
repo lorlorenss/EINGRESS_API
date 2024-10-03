@@ -20,7 +20,7 @@ export class EmployeeService {
   ) { }
 
 
-  create(employee: Employee): Observable<Employee> {
+  create(employee: Employee, fingerprint1Buffer?: Buffer, fingerprint2Buffer?: Buffer): Observable<Employee> {
     // Set default values if they are not provided
     if (!employee.lastlogdate) {
       employee.lastlogdate = '';
@@ -38,6 +38,14 @@ export class EmployeeService {
       employee.fingerprint2 = '';
     }
 
+    if(fingerprint1Buffer){
+      employee.fingerprintfile1 = fingerprint1Buffer;
+    }
+
+    if(fingerprint1Buffer){
+      employee.fingerprintfile2 = fingerprint2Buffer;
+    }
+
     // Check if fingerprint check can be skipped
     const shouldCheckFingerprints = employee.fingerprint1 || employee.fingerprint2;
 
@@ -46,7 +54,7 @@ export class EmployeeService {
       return from(this.userRepository.save(employee)).pipe(
         catchError(error => {
           console.error('Error creating employee:', error);
-          return throwError(new BadRequestException('An error occurred while creating the employee.'));
+          return throwError(() => new BadRequestException('An error occurred while creating the employee.'));
         })
       );
     }

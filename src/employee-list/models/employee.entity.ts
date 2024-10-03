@@ -49,6 +49,10 @@ export class _dbemployee {
   @Column({ type: 'date',  nullable: true})
   deldate: Date;
 
+  @Column({ type: 'bytea', nullable: true})
+  fingerprintfile1: Buffer;
+  @Column({ type: 'bytea', nullable: true})
+  fingerprintfile2: Buffer;
 
   @OneToMany(() => _dbaccesslog, (accessLog) => accessLog.employee)
   accessLogs: _dbaccesslog[]; // One-to-many relationship with AccessLog

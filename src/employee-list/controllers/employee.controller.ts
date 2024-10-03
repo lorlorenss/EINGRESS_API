@@ -8,6 +8,7 @@ import { v4 as uuid4 } from 'uuid';
 import * as path from 'path';
 import { join } from 'path';
 import { ParseIntPipe } from '@nestjs/common';
+import { Req } from '@nestjs/common';
 
 export const storage = {
   storage: diskStorage({
@@ -29,7 +30,7 @@ export class EmployeeController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file', storage))
-  create(@Body() payload: { employee: string }, @UploadedFile() file): Observable<Employee | Object> {
+  create(@Body() payload: { employee: string }, @UploadedFile() file, @Req() req): Observable<Employee | Object> {
     // Parse the employee JSON string
     let updatedEmployeeData: Employee;
 
@@ -41,24 +42,39 @@ export class EmployeeController {
     }
 
     console.log('Parsed Employee Data:', updatedEmployeeData);
+    let fingerprintfile1Buffer: Buffer | null = null;
+    let fingerprintfile2Buffer: Buffer | null = null;
+    let fingerprintFile1Name: string | null = null; // To store the filename of fingerprint file 1
+    let fingerprintFile2Name: string | null = null;
+
+    const fingerprintFile1 = req.files?.fingerprintFile1;
+    const fingerprintFile2 = req.files?.fingerprintFile2;
+
+    if (fingerprintFile1) {
+      fingerprintfile1Buffer = fingerprintFile1.buffer;
+      fingerprintFile1Name = fingerprintFile1.originalname;
+    }
+
+    if (fingerprintFile2) {
+      fingerprintfile2Buffer = fingerprintFile2.buffer;
+      fingerprintFile2Name = fingerprintFile2.originalname;
+    }
 
     // If no file is uploaded, use a default image path
     if (!file) {
       
-      
       const updatedEmployeeData = JSON.parse(JSON.parse(JSON.stringify(payload.employee)));
-
       const nameOfFile = updatedEmployeeData.fullname;
-
       const specificFilePath = nameOfFile + '.png';
+
       console.log('typeof ', updatedEmployeeData);
       console.log('fullname is ' + nameOfFile);
 
-      return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath });
+      return this.userService.create({ ...updatedEmployeeData, profileImage: specificFilePath, fingerprintfile1: fingerprintfile1Buffer, fingerprintfile2: fingerprintfile2Buffer, fingerprintFile1Name, fingerprintFile2Name });
     }
 
     // If a file is uploaded, proceed with the file's filename
-    return this.userService.create({ ...updatedEmployeeData, profileImage: file.filename });
+    return this.userService.create({ ...updatedEmployeeData, profileImage: file.filename, fingerprintfile1: fingerprintfile1Buffer, fingerprintfile2: fingerprintfile2Buffer, fingerprintFile1Name, fingerprintFile2Name });
   }
 
   @Get(':id') // Route for findOne

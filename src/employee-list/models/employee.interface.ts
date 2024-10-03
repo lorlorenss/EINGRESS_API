@@ -9,8 +9,10 @@ export interface Employee {
   profileImage?: string;
   fingerprint1?: string;
   fingerprint2?: string;
-  template1?: string;
-  template2?: string;
+  fingerprintfile1?: Buffer;
+  fingerprintfile2?: Buffer;
+  fingerprintFile1Name?: string; 
+  fingerprintFile2Name?: string;
   rfidtag?: string;
   branch: string;
   deldate?:Date;
