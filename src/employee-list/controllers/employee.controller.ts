@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Delete, Put, NotFoundException, BadRequestException, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
 import { EmployeeService } from '../services/employee.service';
 import { Employee } from '../models/employee.interface';
-import { Observable, catchError, map, mergeMap, of, switchMap } from 'rxjs';
+import { Observable, catchError, from, map, mergeMap, of, switchMap } from 'rxjs';
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer';
 import { v4 as uuid4 } from 'uuid';
@@ -135,7 +135,15 @@ export class EmployeeController {
     );
   }
 
-
+  @Post(':id/fingerprintFiles')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFingerPrint(@Param('id') id: string, @UploadedFile() file: Express.Multer.File){
+    const employee: Employee = {
+      fingerPrintFile1: file?.buffer, //for fingerprint filesssss
+      fingerPrintFile2: file?.buffer
+    };
+    return this.userService.uploadFingerPrint(employee)
+  }
 
   @Post('log-access')
   logAccess(@Body() body: any): Promise<void> {

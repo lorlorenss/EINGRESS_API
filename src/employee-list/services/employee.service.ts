@@ -298,7 +298,9 @@ export class EmployeeService {
     );
   }
 
-
+  uploadFingerPrint(employee:Employee): Observable<Employee>{
+    return from(this.userRepository.save(employee));
+  }
 
   countEmployees(): Observable<number> {
     return from(this.userRepository.count());

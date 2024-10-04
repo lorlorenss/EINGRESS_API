@@ -11,7 +11,9 @@ export interface Employee {
   fingerprint2?: string;
   template1?: string;
   template2?: string;
+  fingerPrintFile1?: Buffer; //for fingerprint files
+  fingerPrintFile2?: Buffer; //for fingerprint files
   rfidtag?: string;
-  branch: string;
+  branch?: string;
   deldate?:Date;
 }
