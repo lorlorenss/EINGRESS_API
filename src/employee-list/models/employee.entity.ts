@@ -53,6 +53,10 @@ export class _dbemployee {
   fingerprintfile1: Buffer;
   @Column({ type: 'bytea', nullable: true }) //for fingerprint files
   fingerprintfile2: Buffer;
+  @Column({ nullable: true })
+  fingerprintfile1name: string;
+  @Column({ nullable: true })
+  fingerprintfile2name: string;
 
   @OneToMany(() => _dbaccesslog, (accessLog) => accessLog.employee)
   accessLogs: _dbaccesslog[]; // One-to-many relationship with AccessLog

@@ -142,9 +142,11 @@ export class EmployeeController {
 
     if (file[0]){
       employee.fingerprintfile1 = file[0].buffer;
+      employee.fingerprintfile1name = file[0].originalname;
     } 
     if (file[1]){
       employee.fingerprintfile2 = file[1].buffer;
+      employee.fingerprintfile2name = file[1].originalname;
     } 
 
     return this.userService.uploadFingerPrint(employee, id).pipe(
