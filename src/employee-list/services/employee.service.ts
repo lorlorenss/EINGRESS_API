@@ -298,8 +298,10 @@ export class EmployeeService {
     );
   }
 
-  uploadFingerPrint(employee:Employee): Observable<Employee>{
-    return from(this.userRepository.save(employee));
+  uploadFingerPrint(employee:Employee, id: number): Observable<Employee>{
+    return from(this.userRepository.update(id, employee)).pipe(
+      switchMap(() => this.userRepository.findOne({ where: { id }}))
+    );
   }
 
   countEmployees(): Observable<number> {
