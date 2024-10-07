@@ -135,18 +135,18 @@ export class EmployeeController {
     );
   }
 
-  @Patch(':id/fingerprintFiles')
+  @Post('fingerprintFiles/:id')
   @UseInterceptors(FilesInterceptor('file', 2))
-  uploadFingerPrint(@Param('id') id: number, @UploadedFiles() file: Array<Express.Multer.File>): Observable<Employee>{
+  uploadFingerPrint(@Param('id') id: number, @UploadedFiles() files: Array<Express.Multer.File>): Observable<Employee>{
     const employee: Employee = {};
 
-    if (file[0]){
-      employee.fingerprintfile1 = file[0].buffer;
-      employee.fingerprintfile1name = file[0].originalname;
+    if (files[0]){
+      employee.fingerprintfile1 = files[0].buffer;
+      employee.fingerprintfile1name = files[0].originalname;
     } 
-    if (file[1]){
-      employee.fingerprintfile2 = file[1].buffer;
-      employee.fingerprintfile2name = file[1].originalname;
+    if (files[1]){
+      employee.fingerprintfile2 = files[1].buffer;
+      employee.fingerprintfile2name = files[1].originalname;
     } 
 
     return this.userService.uploadFingerPrint(employee, id).pipe(
