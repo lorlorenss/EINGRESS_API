@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as os from 'os';
-import axios from 'axios'; // Corrected import
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,21 +23,13 @@ async function bootstrap() {
     if (ipAddress) break; // Exit loop if an IP address is found
   }
 
-  // Fetch the public IP address
-  let publicIpAddress: string | undefined;
-  try {
-    const response = await axios.get('http://169.254.169.254/latest/meta-data/public-ipv4');
-    publicIpAddress = response.data;
-  } catch (error) {
-    console.error('Unable to retrieve public IP address', error);
-  }
+  const port = 3000; // Define your port here
 
-  // Log the IP addresses to the console
-  console.log(`Private IP address: ${ipAddress || 'localhost'}`);
-  console.log(`Public IP address: ${publicIpAddress || 'Not available'}`);
+  // Log the IP address and port to the console
+  console.log(`Server is running on IP address: ${ipAddress || 'localhost'}, Port: ${port}`);
 
   // Listen on the dynamic IP address or fallback to localhost if none found
-  await app.listen(3000, ipAddress || 'localhost');
+  await app.listen(port, ipAddress || 'localhost');
 }
 
 bootstrap();
