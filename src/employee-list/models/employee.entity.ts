@@ -6,7 +6,7 @@ export class _dbemployee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   fullname: string;
 
   @Column()
@@ -39,10 +39,24 @@ export class _dbemployee {
   fingerprint1: string;
   @Column({ nullable: true})
   fingerprint2: string;
-  // @Column({ nullable: true })
-  // profileImagePath?: string;
+  @Column({ nullable: true})
+  template1: string;
+  @Column({ nullable: true})
+  template2: string;
   @Column({ nullable: true})
   branch: string;
+
+  @Column({ type: 'date',  nullable: true})
+  deldate: Date;
+
+  @Column({ type: 'bytea', nullable: true }) //for fingerprint files
+  fingerprintfile1: Buffer;
+  @Column({ type: 'bytea', nullable: true }) //for fingerprint files
+  fingerprintfile2: Buffer;
+  @Column({ nullable: true })
+  fingerprintfile1name: string;
+  @Column({ nullable: true })
+  fingerprintfile2name: string;
 
   @OneToMany(() => _dbaccesslog, (accessLog) => accessLog.employee)
   accessLogs: _dbaccesslog[]; // One-to-many relationship with AccessLog

@@ -10,6 +10,9 @@ import { EmployeeListModule } from './employee-list/employee-list.module';
 import { AccessLogModule } from './access-log/access-log.module';
 import { LoginTotalModule } from './login-total/login-total.module';
 import { ErrorLogModule } from './error-log/error-log.module';
+import { MailerModule } from './mailer/mailer.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 
 @Module({
@@ -36,6 +39,11 @@ import { ErrorLogModule } from './error-log/error-log.module';
     AccessLogModule,
     LoginTotalModule,
     ErrorLogModule,
+    MailerModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'src', 'mailer'), // Serve files from src/mailer
+      serveRoot: '/static', // The route where your static files will be served
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

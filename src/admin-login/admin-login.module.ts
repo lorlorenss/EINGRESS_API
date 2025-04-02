@@ -11,6 +11,7 @@ import { AuthModule } from 'src/auth/auth.module';
     AuthModule
   ],
   providers: [AdminLoginService],
-  controllers: [AdminLoginController]
+  controllers: [AdminLoginController],
+  exports: [AdminLoginService],
 })
 export class AdminLoginModule {}
