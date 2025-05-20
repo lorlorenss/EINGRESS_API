@@ -152,6 +152,49 @@ export class EmployeeService {
       }),
     );
   }
+
+  logEmployeeAccessException(rfid: string): Observable<any> {
+    return from(this.userRepository.findOne({ where: { rfidtag: rfid } })).pipe(
+      switchMap((employee: _dbemployee | null) => {
+        if (!employee) {
+          throw new BadRequestException('Employee not found');
+        }
+
+        // Format date to Philippine time
+        const currentDate = new Date();
+        const options: Intl.DateTimeFormatOptions = {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: 'Asia/Manila',
+        };
+        const dateAndTimeInPhilippineTime = currentDate.toLocaleString('en-PH', options);
+        employee.lastlogdate = dateAndTimeInPhilippineTime;
+
+        // Save updated employee and log access
+        return from(this.userRepository.save(employee)).pipe(
+          switchMap(() => this.accessLogService.logAccessException(rfid)),
+          map(() => ({
+            fullname: employee.fullname,
+            role: employee.role,
+            profileImage: employee.profileImage,
+          }))
+        );
+      }),
+      catchError((error) => {
+        if (error instanceof BadRequestException) {
+          console.error('Error logging employee access:', error.message);
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
+
   private checkDuplicateFingerprint(employee: Employee, idToExclude?: number): Observable<{ fullname: string, branch: string } | void> {
     // Create a query builder instance
     const queryBuilder = this.userRepository.createQueryBuilder('user');

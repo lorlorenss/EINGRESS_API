@@ -168,6 +168,16 @@ export class EmployeeController {
     return this.userService.logEmployeeAccess(fingerprint, rfid).toPromise();
   }
 
+  @Post('log-access-exception')
+  logAccessPass(@Body() body: any): Promise<void> {
+    const {rfid } = body;
+    if (!rfid) {
+      throw new BadRequestException('Fingerprint is required');
+    }
+
+    return this.userService.logEmployeeAccessException(rfid).toPromise();
+  }
+
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', storage))
