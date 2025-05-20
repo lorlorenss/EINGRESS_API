@@ -3,7 +3,7 @@ name: Build and push Docker image to Azure Container Registry
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
